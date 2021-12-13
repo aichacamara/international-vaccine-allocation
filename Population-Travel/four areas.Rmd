@@ -13,7 +13,9 @@ library(lubridate)
 
 First, load in the following dataframes from the github (headings = True).
 
-passengers is the number of passengers carried by country. This data was collected via International Civil Aviation Organization, Civil Aviation Statistics of the World and ICAO staff estimates. details here: https://data.worldbank.org/indicator/IS.AIR.PSGR?end=2019&name_desc=false&start=2019&view=bar
+passengers is the number of passengers carried by country per year. This data was collected via International Civil Aviation Organization, Civil Aviation Statistics of the World and ICAO staff estimates. details here: https://data.worldbank.org/indicator/IS.AIR.PSGR?end=2019&name_desc=false&start=2019&view=bar
+This includes domestic travel.
+
 
 vaccinations is a dataframe detailing covid cases and vaccinations per country per day. It comes from ourworldindata, link here: https://ourworldindata.org/covid-vaccinations?country=USA
 
