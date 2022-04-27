@@ -1,0 +1,413 @@
+---
+title: "Mid Pandemic Data Manipulation"
+author: "Abraham Holleran"
+date: "12/12/2021"
+output: html_document
+---
+In this R Markdown notebook, we group the countries of the world by high/low vaccination rates and high/low travel rates.
+
+```{r warning=FALSE, include=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+First, load in the following dataframes from the github (headings = True).
+
+passengers is the number of passengers carried by country per year. This data was collected via International Civil Aviation Organization, Civil Aviation Statistics of the World and ICAO staff estimates. details here: https://data.worldbank.org/indicator/IS.AIR.PSGR?end=2019&name_desc=false&start=2019&view=bar
+This includes domestic travel.
+
+
+vaccinations is a dataframe detailing covid cases and vaccinations per country per day. It comes from ourworldindata, link here: https://ourworldindata.org/covid-vaccinations?country=USA
+
+pop is simply the population by region. It comes from our world in data. https://ourworldindata.org/grapher/world-population-by-world-regions-post-1820
+
+```{r}
+passengers <- read.csv("passengers_2020.csv")
+vaccinations <- read.csv("vaccinations.csv")
+pop <- read.csv("pop.csv")
+```
+
+Let's explore the vaccinations. When did countries vaccinate?
+```{r}
+vaccinations %>%
+  group_by(iso_code) %>%
+  summarize(max = max(ymd(date)-ymd("2020-01-01")), min = min(ymd(date)-ymd("2020-01-01")))%>%
+  ggplot()+
+  geom_linerange(aes(x=iso_code, ymin = min, ymax = max))
+```
+What was the vax budget per day?
+```{r}
+vax_budget <- vaccinations %>%
+  select(iso_code, location, date, daily_vaccinations) %>%
+  mutate(daily_vaccinations = ifelse(is.na(daily_vaccinations), 0, daily_vaccinations))%>%
+  group_by(date) %>%
+  summarize(budget = sum(daily_vaccinations))%>%
+  filter(budget > 1) %>%
+    mutate(days_since_jan_2020 = (ymd(date)-ymd("2020-01-01")) %>%
+           substr(1, 3) %>%
+           as.integer()
+         )
+```
+Lets plot both cumulative and daily (times 100) vaccinations.
+```{r}
+vax_budget %>%
+  ggplot()+
+  geom_line(aes(x=days_since_jan_2020, y = cumsum(budget)))+
+  geom_line(aes(x=days_since_jan_2020, y = 100*budget))+
+  xlim(c(500,600))
+cumsum(vax_budget$budget)[517-343] #June 1, 2021 has 778m vax
+```
+So, now we know when the vaccinations happened. We see that vaccinations reach 800m at around June 1st, 2021. We set this as the start date for the model!! This is "mid pandemic."
+As it happens, this is when USA cases were very low. The delta variant was just getting started, with cases to really start to rise in 2 months. See https://nextstrain.org/ncov/gisaid/north-america.  Global cases were average. The Omicron variant would be emerging in December 2021, in 180 days.
+
+
+```{r}
+all_owid %>%
+  filter(between(ymd(date), mdy("08-01-2021"), mdy("12-01-2021"))) %>% #August 2021-Dec 2021 is approx time between var
+  group_by(iso_code) %>%
+  summarize(sum_cases = sum(new_cases, na.rm = T)) %>%
+  summarize(total_cases_all = 3.5*sum(sum_cases, na.rm = T))
+all_owid %>%
+  filter(between(ymd(date), mdy("04-01-2021"), mdy("8-01-2021"))) %>% #August 2021-Dec 2021 is approx time between var
+  group_by(iso_code) %>%
+  summarize(sum_cases = sum(new_cases, na.rm = T)) %>%
+  summarize(total_cases_all = 3.5*sum(sum_cases, na.rm = T))
+```
+
+
+
+
+Let's collect data but from June 2021.
+
+Passengers is sparse. For the missing values, let's replace the 2020 passenger number with the maximum of the 2000-2020 passengers. If there's no data between 2000-2020, we drop the country.
+```{r warning=FALSE}
+fill <- passengers[is.na(passengers$X2020),45:65] #Years 2000 to 2020
+fill_max <- apply(X = fill, FUN = max, na.rm = T, MARGIN = 1)
+passengers$X2020[is.na(passengers$X2020)] <- fill_max
+count2020 <- passengers %>%
+  filter(X2020 > 0) %>%
+  select(1:2, X2020)
+count2020 %>%
+  summarize(summ = sum(X2020, na.rm = T))
+```
+
+Let's take the maximum population in each area.
+```{r}
+area_pop <- pop %>%
+  group_by(Code) %>%
+  slice(which.max(Year)) %>%
+  select(-c(3))
+```
+Let's take the people vaccinated, per hundred, for each country. We use June 2021.
+```{r}
+START_DATE = ymd("2021-06-01")
+top_v <- vaccinations %>%
+  filter(ymd(date)<START_DATE) %>%
+  mutate(date = ymd(date)) %>%
+  group_by(iso_code) %>%
+  slice(which.max(date)) %>%
+  arrange(desc(people_vaccinated_per_hundred)) %>%
+  select(iso_code, location, people_vaccinated_per_hundred) %>%
+  ungroup()
+top_v
+```
+Let's join our country, vaccination, population, and travel data together. Then, we drop NAs and calculate the flights per person.
+
+```{r}
+data <- top_v %>%
+  inner_join(count2020, by = c("iso_code" = "Country.Code")) %>%
+  inner_join(area_pop, by = c("iso_code" = "Code")) %>%
+  select(iso = iso_code, area_name = location, vax = people_vaccinated_per_hundred, annual_passengers = X2020, pop = Population..historical.estimates.) %>%
+  mutate(flights_per_pop = annual_passengers/pop)
+data
+```
+Let's bring in all of the OWID (our world in data) information.
+First, let's find out the total number of tests per day. To keep the test data as recent as possible, we consider everything in the 6 months (180 days) preceding June 1st, 2021.
+
+```{r warning=FALSE}
+all_owid <- read.csv("owid-covid-data.csv")
+all_owid_180 <- all_owid %>%
+  filter(between(ymd(date), START_DATE-179, START_DATE)) #180 day interval, Dec 4 - June 1
+```
+To find the total tests per day, we sum the "new_test" column and we count the number of days that new tests are recorded.
+Many areas record their tests in lumps, so the number of test days is unknown or unrealistically low (many are less than 20.) So, we let the number of test days be the max(test_days, 20).So, we sum up the tests, then divide by the number of  days to get the tests per day.
+
+```{r}
+tests_per_day_df<- all_owid_180 %>%
+  group_by(iso_code) %>%
+  summarize(sum_tests = sum(new_tests, na.rm = T), total_days = sum(new_tests>0, na.rm = T)) %>%
+  group_by(iso_code) %>%
+  mutate(total_days = max(total_days, 20)) %>%
+  mutate(tests_per_day = sum_tests/total_days)%>%
+  arrange(desc(tests_per_day))
+tests_per_day_df %>%
+  ggplot()+
+  geom_histogram(aes(x=log(tests_per_day)), bins = 20)
+
+
+
+all_owid_180 %>%
+  select(iso_code, date, new_tests, new_cases, positive_rate) %>%
+  mutate(should_be_pos = new_cases/new_tests) %>%
+  group_by(iso_code, date) %>%
+  count(between(should_be_pos, (positive_rate/1.1), (positive_rate*1.1)))
+  #arrange(desc(should_be_pos)) %>%
+  filter(between(should_be_pos, (positive_rate/1.1), (positive_rate*1.1)))
+```
+
+Let's find vaccine and mortality parameters from the most recent dataset. We also join this with the "data" dataframe we made earlier to get the travel information and the old "vax" variable.
+The "latest" vax data is NA sometimes, so we fill it in with the full_vax_rate or the variable "vax" from the "data" dataframe that we joined in.
+```{r}
+all_owid_14 <- all_owid_180 %>%
+   filter(between(ymd(date), START_DATE-14, START_DATE)) %>%
+  select(iso_code, location, date, total_cases, total_deaths, people_vaccinated, people_fully_vaccinated, population, new_cases_smoothed)
+latest_data <- all_owid_14 %>%
+  group_by(iso_code) %>%
+  mutate(people_vaccinated = max(people_vaccinated, na.rm=T),
+         people_fully_vaccinated = max(people_fully_vaccinated, na.rm=T),
+         total_cases = max(total_cases, na.rm=T),
+         total_deaths = max(total_deaths, na.rm=T))%>%
+  mutate(people_vaccinated=ifelse((is.na(people_vaccinated) | people_vaccinated<0), people_fully_vaccinated, people_vaccinated)) %>%
+  mutate(people_vaccinated=ifelse((is.na(people_vaccinated) | people_vaccinated<0), 0, people_vaccinated)) %>%
+  mutate(total_deaths=ifelse((is.na(total_deaths) | total_deaths<0), 0, total_deaths)) %>%
+  mutate(total_cases=ifelse((is.na(total_cases) | total_cases<0), 1, total_cases)) %>%
+  mutate(people_fully_vaccinated=ifelse((is.na(people_fully_vaccinated) | people_fully_vaccinated<0), 0, people_fully_vaccinated)) %>%
+  ungroup()%>%
+  filter(ymd(date)==START_DATE) %>%
+  mutate(mortality_rate = total_deaths/total_cases,
+         vax_rate = people_vaccinated/population,
+         full_vax_rate = people_fully_vaccinated/population)%>%
+  mutate(mortality_rate = ifelse(is.na(mortality_rate)| mortality_rate < 0.003, .01, mortality_rate)) %>%
+  inner_join(data, by = c("iso_code" = "iso"))%>%
+  mutate(vax = ifelse(is.na(vax_rate) | vax_rate==0, vax/100, vax_rate)) %>%
+  mutate(vax = ifelse(is.na(vax) | vax == 0, full_vax_rate, vax)) %>%
+  drop_na(vax) %>%
+  select(-location, -pop, -vax_rate, -full_vax_rate)
+latest_data
+```
+
+We bring in the testing data into latest_data.
+```{r}
+latest_data_tests <- latest_data %>%
+  left_join(tests_per_day_df, by="iso_code")
+latest_data_tests %>%
+  mutate(percent_increase_in_rd = (tests_per_day/population)*3.5*100) %>%
+  arrange(desc(percent_increase_in_rd))%>%
+  ggplot()+
+  geom_histogram(aes(x=percent_increase_in_rd))
+```
+
+We split the 166 countries into 4 areas and then union them together.
+There are two ways to split the countries into 4 areas. We do both and plot both. Splitting on travel first is "areas_data". Splitting on vax first is "four_areas". Please forgive the undescriptive variable names.
+```{r}
+high_travel <- latest_data %>%
+  arrange(desc(flights_per_pop)) %>%
+  slice(1:(nrow(latest_data)/2))
+
+low_travel <- latest_data %>%
+  arrange(desc(flights_per_pop)) %>%
+  slice(((nrow(latest_data))/2)+1:nrow(latest_data))
+
+high_vax_high_travel <- high_travel %>%
+  arrange(desc(vax)) %>%
+  slice(1:42) %>%
+  mutate(area = 1)
+
+low_vax_high_travel <- high_travel %>%
+  arrange(desc(vax)) %>%
+  slice(43:83) %>%
+  mutate(area = 2)
+
+high_vax_low_travel <- low_travel %>%
+  arrange(desc(vax)) %>%
+  slice(1:42) %>%
+  mutate(area = 3)
+
+low_vax_low_travel <- low_travel %>%
+  arrange(desc(vax)) %>%
+  slice(43:83) %>%
+  mutate(area = 4)
+
+areas_data <- union(high_vax_high_travel, low_vax_high_travel) %>%
+  union(high_vax_low_travel) %>%
+  union(low_vax_low_travel) %>%
+  select(area, everything())
+```
+We split again, but first by vax this time.
+```{r}
+high_vax <- latest_data %>%
+  arrange(desc(vax)) %>%
+  slice(1:83)
+
+low_vax <- latest_data %>%
+  arrange(desc(vax)) %>%
+  slice(84:166)
+
+high_vax_high_flights <- high_vax %>%
+  arrange(desc(flights_per_pop)) %>%
+  slice(1:42) %>%
+  mutate(area = 1)
+
+low_vax_high_flights <- low_vax %>%
+  arrange(desc(flights_per_pop)) %>%
+  slice(1:42) %>%
+  mutate(area = 2)
+
+high_vax_low_flights <- high_vax %>%
+  arrange(desc(flights_per_pop)) %>%
+  slice(43:83) %>%
+  mutate(area = 3)
+
+low_vax_low_flights <- low_vax %>%
+  arrange(desc(flights_per_pop)) %>%
+  slice(43:83)  %>%
+  mutate(area = 4)
+
+four_areas <- union(high_vax_high_flights, low_vax_high_flights) %>%
+  union(high_vax_low_flights) %>%
+  union(low_vax_low_flights) %>%
+  select(area, everything())
+```
+
+```{r}
+areas_data %>%
+  mutate(area = as.factor(area))%>%
+  ggplot()+
+  geom_point(aes(x=flights_per_pop,y=vax, col = area))+
+  xlim(c(0,3))
+```
+```{r}
+four_areas %>%
+  mutate(area = as.factor(area))%>%
+  ggplot()+
+  geom_point(aes(x=flights_per_pop,y=vax, col = area))+
+  xlim(c(0,3))
+```
+So, which splitting works best? We use "areas_data", which splits by travel first.
+We find some basic statistics per area, to go into the four area model variant.
+```{r}
+areas_data %>%
+  group_by(area)%>%
+  summarize(mean_mort = mean(mortality_rate, na.rm = T),
+            mean_vax = mean(vax, na.rm = T),
+            mean_travel = mean(flights_per_pop, na.rm = T),
+            mean_tests_per_day = mean(tests_per_day, na.rm = T),
+            median_population = median(population, na.rm = T)) #Not used in model
+```
+
+We get some initial state information. First, we make sure people_vaccinated is full.
+This is almost ready to be put in the model.
+```{r}
+clean_data <- areas_data %>%
+  mutate(people_vaccinated = ifelse(is.na(people_vaccinated), vax*population, people_vaccinated)) %>%
+  mutate(I = new_cases_smoothed*3.5*(1-vax), #since they are in I for 2 days.
+         IV = new_cases_smoothed*3.5*vax,
+         I = ifelse(is.na(I), 0, I),
+         IV = ifelse(is.na(IV), 0, IV),
+         SV = people_vaccinated - IV,
+         S = population - I - IV - SV) %>% #same as (pop - pop_vax) - I
+  select(-flights_per_pop, -total_deaths, -people_fully_vaccinated, -new_cases_smoothed, -total_cases)%>%
+  mutate(mortality_rate = ifelse(is.na(mortality_rate), mean(mortality_rate, na.rm = T), mortality_rate))%>%
+  select(area, iso_code, area_name, everything())
+clean_data %>%
+  filter(iso_code == "USA")
+```
+More data for 4 areas mid.
+```{r}
+clean_data %>%
+  group_by(area) %>%
+  summarize(infections_if_100k_pop = (mean(I)/mean(population))*100000,
+            SV = (mean(SV)/mean(population))*100000,
+            SV2 = mean(vax)*100000)
+  
+```
+Attempted multiple regression model to fix the disparity (3 orders of magnitude) between I/N and pos_rate. The model fails to predict the recorded positivity rate in areas that don't have a recorded positivity rate. R^2=0.14, R = .375, P value from F test is 0.02. 
+```{r}
+has_positivity_rate <- positivity_rate %>%
+  filter(pos_data == 1) %>%
+  mutate(adjusted_I = (I + .63*IV)) %>%
+  filter(!iso_code %in% c("BIH", "UKR"))
+mod = lm(max_pos ~ people_vaccinated + population + vax + max_tests + adjusted_I, data = has_positivity_rate)
+summary(mod)
+no_positivity_rate <-positivity_rate %>%
+  filter(pos_data == 0) %>%
+  mutate(adjusted_I = (I + .63*IV))
+hist(no_positivity_rate$max_pos, bins = 30)
+hist(predict(mod, new_data = no_positivity_rate, interval = "confidence")[,1])
+hist(has_positivity_rate$max_pos)
+```
+```{r}
+daily <- has_positivity_rate %>%
+  mutate(daily_pos_tests = max_pos * tests_per_day)
+mod1 <- lm(daily_pos_tests ~ people_vaccinated + population + vax + adjusted_I, data = daily)
+summary(mod1)
+plot(mod1)
+hist((predict(mod1, new_data = no_positivity_rate, interval = "confidence")[,1]/no_positivity_rate$tests_per_day), breaks = 30)
+hist(daily$daily_pos_tests/daily$tests_per_day, breaks = 30)
+no_positivity_rate %>% cbind(predict(mod1, new_data = no_positivity_rate, interval = "confidence"))
+hist((predict(mod1, new_data = no_positivity_rate, interval = "confidence")[,1]/no_positivity_rate$population), breaks = seq(from =-.2, to = .5,.1))
+hist(daily$daily_pos_tests/daily$population, breaks = seq(from =0, to = .01,.0002))
+
+has_positivity_rate %>%
+  select(max_pos, new_cases, tests_per_day, iso_code) %>%
+  mutate(should_be_pos_rate = new_cases/tests_per_day) %>%
+  ggplot()+
+  geom_point(aes(x=iso_code, y = should_be_pos_rate))
+ggplot(has_positivity_rate) +
+  geom_point(aes(x=iso_code, y = max_pos))
+
+```
+
+
+
+```{r}
+all_owid_180 %>%
+  filter(iso_code == "GBR") %>%
+  ggplot()+
+  geom_line(aes(x=ymd(date)-START_DATE, y = new_tests_smoothed))
+```
+
+
+
+```{r}
+write.csv(clean_data, "mid_vaccine_params.csv")
+write.csv(vax_budget, "vax_budget.csv")
+```
+
+```{r}
+
+positivity_rate <- all_owid_180 %>%
+  select(iso_code, date, location, population, positive_rate) %>%
+  group_by(iso_code) %>%
+  summarise(max_pos = max(positive_rate)) %>%
+  drop_na(max_pos) %>%
+  mutate(pos_data = 1)%>%
+  right_join(clean_data, by = "iso_code") %>%
+  mutate(max_pos = ifelse(is.na(max_pos), (I+(1-.42)*IV)/population, max_pos)) %>%
+  mutate(pos_data = ifelse(is.na(pos_data), 0, 1))
+positivity_rate  %>%
+  ggplot()+
+  geom_histogram(aes(x=max_pos, fill = as.factor(pos_data)), position = "stack")# +
+  #xlim(-.01, 0.1)
+summary(lm(max_pos ~ pos_data, data = positivity_rate))
+positivity_rate %>%
+  #filter(pos_data == 1) %>%
+  lm(max_pos ~ pos_data*(I+(1-.42)*IV)/population) %>%
+  group_by(pos_data) %>%
+  summarise(mean = mean(max_pos), sd = sd(max_pos))
+mean(positivity_rate[positivity_rate$pos_data == 1,])/mean(positivity_rate[positivity_rate$pos_data == 0,])
+
+lm_df <- positivity_rate %>%
+  filter(pos_data == 1) %>%
+  mutate(ppp = (I+(1-.42)*IV)/population)
+summary(lm(max_pos ~ ppp, data = lm_df))
+
+lm_df %>%
+  mutate(xy = max_pos * ppp, xx = ppp**2) %>%
+  mutate(b = sum(xy)/sum(ppp))
+#%>%
+#  ggplot()+
+#  geom_histogram(aes(x=max_pos))
+```
+
+
