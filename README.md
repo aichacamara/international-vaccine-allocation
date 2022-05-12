@@ -18,6 +18,6 @@ Table for each parameter and its source.\
 Literature review ('paper summary')\
 \
 plots:\
-Plots for scenarios listed in the paper.\
+Plots for scenarios listed in the paper.
 
 
