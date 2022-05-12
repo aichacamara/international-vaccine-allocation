@@ -140,19 +140,6 @@ tests_per_day_df<- all_owid_180 %>%
   mutate(total_days = max(total_days, 20)) %>%
   mutate(tests_per_day = sum_tests/total_days)%>%
   arrange(desc(tests_per_day))
-tests_per_day_df %>%
-  ggplot()+
-  geom_histogram(aes(x=log(tests_per_day)), bins = 20)
-
-
-
-all_owid_180 %>%
-  select(iso_code, date, new_tests, new_cases, positive_rate) %>%
-  mutate(should_be_pos = new_cases/new_tests) %>%
-  group_by(iso_code, date) %>%
-  count(between(should_be_pos, (positive_rate/1.1), (positive_rate*1.1)))
-  #arrange(desc(should_be_pos)) %>%
-  filter(between(should_be_pos, (positive_rate/1.1), (positive_rate*1.1)))
 ```
 
 Let's find vaccine and mortality parameters from the most recent dataset. We also join this with the "data" dataframe we made earlier to get the travel information and the old "vax" variable.
@@ -286,12 +273,15 @@ four_areas %>%
 So, which splitting works best? We use "areas_data", which splits by travel first.
 We find some basic statistics per area, to go into the four area model variant.
 ```{r}
+areas_data <- areas_data %>%
+  left_join(tests_per_day_df, by = "iso_code")
 areas_data %>%
   group_by(area)%>%
   summarize(mean_mort = mean(mortality_rate, na.rm = T),
             mean_vax = mean(vax, na.rm = T),
             mean_travel = mean(flights_per_pop, na.rm = T),
-            mean_tests_per_day = mean(tests_per_day, na.rm = T),
+            mean_tests_per_day = sum(sum_tests, na.rm =T)/mean(total_days, na.rm = T),
+            mean_tests_per_day_100k = mean_tests_per_day*(100000)/sum(population, na.rm = T),
             median_population = median(population, na.rm = T)) #Not used in model
 ```
 
@@ -300,12 +290,17 @@ This is almost ready to be put in the model.
 ```{r}
 clean_data <- areas_data %>%
   mutate(people_vaccinated = ifelse(is.na(people_vaccinated), vax*population, people_vaccinated)) %>%
-  mutate(I = new_cases_smoothed*3.5*(1-vax), #since they are in I for 2 days.
-         IV = new_cases_smoothed*3.5*vax,
+  mutate(r_d_D = ((1/3.5)+.9*tests_per_day/population)**-1)%>%
+  mutate(I = new_cases_smoothed*r_d_D*(1-vax), 
+         IV = new_cases_smoothed*r_d_D*vax,
+         E = new_cases_smoothed*5*(1-vax),
+         EV = new_cases_smoothed*5*r_d_D*vax,
+         E = ifelse(is.na(E), 0, E),
+         EV = ifelse(is.na(EV), 0, EV),
          I = ifelse(is.na(I), 0, I),
          IV = ifelse(is.na(IV), 0, IV),
-         SV = people_vaccinated - IV,
-         S = population - I - IV - SV) %>% #same as (pop - pop_vax) - I
+         SV = people_vaccinated - IV - EV,
+         S = population - I - IV - SV - E - EV) %>% #same as (pop - pop_vax) - I - E
   select(-flights_per_pop, -total_deaths, -people_fully_vaccinated, -new_cases_smoothed, -total_cases)%>%
   mutate(mortality_rate = ifelse(is.na(mortality_rate), mean(mortality_rate, na.rm = T), mortality_rate))%>%
   select(area, iso_code, area_name, everything())
@@ -321,43 +316,7 @@ clean_data %>%
             SV2 = mean(vax)*100000)
   
 ```
-Attempted multiple regression model to fix the disparity (3 orders of magnitude) between I/N and pos_rate. The model fails to predict the recorded positivity rate in areas that don't have a recorded positivity rate. R^2=0.14, R = .375, P value from F test is 0.02. 
-```{r}
-has_positivity_rate <- positivity_rate %>%
-  filter(pos_data == 1) %>%
-  mutate(adjusted_I = (I + .63*IV)) %>%
-  filter(!iso_code %in% c("BIH", "UKR"))
-mod = lm(max_pos ~ people_vaccinated + population + vax + max_tests + adjusted_I, data = has_positivity_rate)
-summary(mod)
-no_positivity_rate <-positivity_rate %>%
-  filter(pos_data == 0) %>%
-  mutate(adjusted_I = (I + .63*IV))
-hist(no_positivity_rate$max_pos, bins = 30)
-hist(predict(mod, new_data = no_positivity_rate, interval = "confidence")[,1])
-hist(has_positivity_rate$max_pos)
-```
-```{r}
-daily <- has_positivity_rate %>%
-  mutate(daily_pos_tests = max_pos * tests_per_day)
-mod1 <- lm(daily_pos_tests ~ people_vaccinated + population + vax + adjusted_I, data = daily)
-summary(mod1)
-plot(mod1)
-hist((predict(mod1, new_data = no_positivity_rate, interval = "confidence")[,1]/no_positivity_rate$tests_per_day), breaks = 30)
-hist(daily$daily_pos_tests/daily$tests_per_day, breaks = 30)
-no_positivity_rate %>% cbind(predict(mod1, new_data = no_positivity_rate, interval = "confidence"))
-hist((predict(mod1, new_data = no_positivity_rate, interval = "confidence")[,1]/no_positivity_rate$population), breaks = seq(from =-.2, to = .5,.1))
-hist(daily$daily_pos_tests/daily$population, breaks = seq(from =0, to = .01,.0002))
-
-has_positivity_rate %>%
-  select(max_pos, new_cases, tests_per_day, iso_code) %>%
-  mutate(should_be_pos_rate = new_cases/tests_per_day) %>%
-  ggplot()+
-  geom_point(aes(x=iso_code, y = should_be_pos_rate))
-ggplot(has_positivity_rate) +
-  geom_point(aes(x=iso_code, y = max_pos))
-
-```
-
+I used these data frames to attempt a multiple regression model to fix the disparity (3 orders of magnitude) between I/N and pos_rate. The model fails to predict the recorded positivity rate in areas that don't have a recorded positivity rate. R^2=0.14, R = .375, P value from F test is 0.02. 
 
 
 ```{r}
@@ -372,42 +331,6 @@ all_owid_180 %>%
 ```{r}
 write.csv(clean_data, "mid_vaccine_params.csv")
 write.csv(vax_budget, "vax_budget.csv")
-```
-
-```{r}
-
-positivity_rate <- all_owid_180 %>%
-  select(iso_code, date, location, population, positive_rate) %>%
-  group_by(iso_code) %>%
-  summarise(max_pos = max(positive_rate)) %>%
-  drop_na(max_pos) %>%
-  mutate(pos_data = 1)%>%
-  right_join(clean_data, by = "iso_code") %>%
-  mutate(max_pos = ifelse(is.na(max_pos), (I+(1-.42)*IV)/population, max_pos)) %>%
-  mutate(pos_data = ifelse(is.na(pos_data), 0, 1))
-positivity_rate  %>%
-  ggplot()+
-  geom_histogram(aes(x=max_pos, fill = as.factor(pos_data)), position = "stack")# +
-  #xlim(-.01, 0.1)
-summary(lm(max_pos ~ pos_data, data = positivity_rate))
-positivity_rate %>%
-  #filter(pos_data == 1) %>%
-  lm(max_pos ~ pos_data*(I+(1-.42)*IV)/population) %>%
-  group_by(pos_data) %>%
-  summarise(mean = mean(max_pos), sd = sd(max_pos))
-mean(positivity_rate[positivity_rate$pos_data == 1,])/mean(positivity_rate[positivity_rate$pos_data == 0,])
-
-lm_df <- positivity_rate %>%
-  filter(pos_data == 1) %>%
-  mutate(ppp = (I+(1-.42)*IV)/population)
-summary(lm(max_pos ~ ppp, data = lm_df))
-
-lm_df %>%
-  mutate(xy = max_pos * ppp, xx = ppp**2) %>%
-  mutate(b = sum(xy)/sum(ppp))
-#%>%
-#  ggplot()+
-#  geom_histogram(aes(x=max_pos))
 ```
 
 
