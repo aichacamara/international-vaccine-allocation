@@ -16,5 +16,4 @@ Outputs from the data manipulation .Rmd file. Includes a CSV for the vaccination
 ### plots:
 Plots for scenarios listed in the paper.
 ### state variable data:
-CSVs holding the state variable data for plots
-
+CSVs holding the state variable data for plots.
