@@ -1,6 +1,3 @@
-# anaconda
-# cd /D C:\Users\Abraham\miniconda3\envs\snowflakes\Scripts\Global_SEIR\Real Sims
-# python iterate_travel_alpha.py
 four_or_not = input("Run simulation on just four areas? [y/n]")
 if four_or_not == "y":
     four_binary = True
@@ -27,22 +24,29 @@ else:
 import csv
 
 start_time = time.time()
-#p_k = 0.75  # proportion forced to be given with policy
-global_population = sum(N_a.values())
-r_d_t = {ar: r_d + w * (tests_per_day[ar] / N_a[ar]) for ar in areas}
 initial_pop_states = ["S", "E", "I", "SV", "IV", "EV"]
+many_areas = areas #Used in case areas is fewer than expected
 small_run = False
 if four_binary:
     donor = "area1"
 else:
     if small_run:
         areas = ["USA", "GRC", "BRA", "PER", "JPN", "RUS", "POL", "IND", "GHA", "ZMB", "VEN", "PAK"]
+        full_population = sum(N_a.values())
+        N_a = {ar: N_a[ar] for ar in areas}
+        global_population = sum(N_a.values())
+        N *= global_population/full_population
+        B_t = {i: B_t[i]*(global_population/full_population) for i in range(len(B_t))}
         num_areas = len(areas)
     donor = "USA"
     initial_pop_a = {}
     for state_var in initial_pop_states:
         for ar in areas:
-            initial_pop_a[ar, state_var] = vaccine_params_df[state_var][areas.index(ar)]
+            initial_pop_a[ar, state_var] = vaccine_params_df[state_var][many_areas.index(ar)]
+
+
+global_population = sum(N_a.values())
+r_d_t = {ar: r_d + w * (tests_per_day[ar] / N_a[ar]) for ar in areas}
 
 
 #Create a simulate object, with a new object once per iteration.
@@ -58,7 +62,6 @@ def simulate_covid(vax_dictionary):
     infected_sum = 0
     area_infected_sum = {(ar, i): 0 for ar in areas for i in range(T)}
     sus_pop = {}
-    being_exposed = {}
     for ar in areas:
         for state_var in initial_pop_states:
             state_variables_simu[ar, state_var, 0] = initial_pop_a[ar, state_var]
@@ -91,8 +94,6 @@ def simulate_covid(vax_dictionary):
 
             state_variables_simu[ar, "S", i+1] = max(state_variables_simu[ar, "S", i+1], 0)
             sus_pop[ar, i] = state_variables_simu[ar, "S", i]
-            being_exposed[ar, 'S', i] = alpha[ar, i] *  state_variables_simu[ar, "S", i] * vectors[ar, i] / N_a[ar]
-            #being_exposed[ar, 'SV', i] = p_r*alpha[ar, i] * state_variables_simu[ar, "S", i] * vectors[ar, i] / N_a[ar]
 
             state_variables_simu[ar, "E", i + 1] = state_variables_simu[ar, "E", i] + alpha[ar, i] * \
                                                     state_variables_simu[ar, "S", i]* vectors[ar, i] / N_a[ar] - r_l * \
@@ -123,12 +124,8 @@ def simulate_covid(vax_dictionary):
     if min(state_variables_simu.values()) < -.001:
         print(f"Warning: In the simulation, some states became negative. The lowest state was {min(state_variables_simu.values())}.\
          You may have put in too many vaccinations.")
-        if not four_binary:
-            test_ar = "USA"
-        else:
-            test_ar = "area1"
-        if state_variables_simu[test_ar, 'S', T-1] < -1:
-            print(f"There is some evidence for that: in {test_ar}, the susceptible population ended with {state_variables_simu[test_ar, 'S', T-1]}.")
+        if state_variables_simu[donor, 'S', T-1] < -1:
+            print(f"There is some evidence for that: in the donor area, {donor}, the susceptible population ended with {state_variables_simu[donor, 'S', T-1]}.")
         for ar in areas:
             print(f"The final sus pop in {ar} is {state_variables_simu[ar, 'S', T - 1]}.")
     min_compartment = min(state_variables_simu.values())
@@ -155,8 +152,9 @@ def simulate_covid(vax_dictionary):
     total_deaths = sum([state_variables_simu[ar, "D", T - 1] for ar in areas])
     print(f"The total number of deaths in this simulation was {total_deaths}.")
     print(f"The total number of deaths in the donor country was {state_variables_simu[donor, 'D', T - 1]}.")
-    return infected_dictionary, infected_V_dictionary, state_variables_simu[donor, 'D', T - 1], alpha, t_N, most_infected_area, sus_pop, being_exposed, min_compartment
-# Opt mod
+    return infected_dictionary, infected_V_dictionary, state_variables_simu[donor, 'D', T - 1], alpha, t_N, most_infected_area, sus_pop, min_compartment
+
+
 iteration_number = 0
 vax_allocation = {(iteration_number, ar, i): 0 for i in range(T-1) for ar in areas}
 infections = {(iteration_number, ar, inf, i): 0 for i in range(T) for ar in areas for inf in ["I", "IV"]}
@@ -165,7 +163,7 @@ print("\nInitialized problem.")
 iteration_number += 1  # it's just 1
 def intensive_simulation_preparing_vaccination(vax_dictionary):
     global T, areas, N_a, B_t, global_population
-    infected_I, infected_IV, obj, alpha, t_N, most_infected_area, sus_pop, being_exposed, min_compartment = simulate_covid(
+    infected_I, infected_IV, obj, alpha, t_N, most_infected_area, sus_pop, min_compartment = simulate_covid(
         vax_dictionary=vax_dictionary)  # this run helps us find vax_dict for the next run
     for i in range(T-1):
         for ar in areas:
@@ -173,7 +171,7 @@ def intensive_simulation_preparing_vaccination(vax_dictionary):
                 vax_dictionary[ar, i] = 0
             else:
                 vax_dictionary[ar, i] = min(B_t[i] * (N_a[ar] / global_population), sus_pop[ar, i])
-                vax_dictionary[ar, i] = max(vax_dictionary[ar, i], 0)
+                vax_dictionary[ar, i] = max(vax_dictionary[ar, i], 0) #removing this changes the output, somehow
     return vax_dictionary, min_compartment
 
 
@@ -185,9 +183,8 @@ while intensive_computation < 3:
     vax_dictionary, min_compartment = intensive_simulation_preparing_vaccination(vax_dictionary)
     print(f"The minimum was {min_compartment}.")
     intensive_computation += 1
-
 print(f"The minimum value is {min_compartment} (hopefully positive or near 0) so we will now do two more then optimize.")
-infected_I, infected_IV, first_obj, alpha, t_N, most_infected_area, sus_pop, being_exposed, min_compartment = simulate_covid(vax_dictionary=vax_dictionary)
+infected_I, infected_IV, first_obj, alpha, t_N, most_infected_area, sus_pop, min_compartment = simulate_covid(vax_dictionary=vax_dictionary)
 for ar in areas:
     for i in range(T-1):
         vax_allocation[iteration_number, ar, i] = vax_dictionary[ar, i]
@@ -198,6 +195,7 @@ for ar in areas:
 vaccine_allocation_totals = {iteration_number: sum(vax_dictionary.values())}
 obj_function_values[iteration_number] = first_obj
 print(f"\nFound feasible solution with donor deaths {first_obj}.\n")
+
 
 obj_difference = abs(
     obj_function_values[iteration_number] - obj_function_values[iteration_number - 1])  # right now it's infinity
@@ -213,24 +211,25 @@ if not four_binary:
         exit()
 
 
-iteration_limit = 3
+iteration_limit = 20
 if not four_binary:
     if small_run:
         exploration_tolerance = 1000000
         termination_tolerance = 50  # .01
     else:
-        exploration_tolerance = 10000000
+        exploration_tolerance = 1000000#0
         termination_tolerance = 100#.01
 else:
     exploration_tolerance = 100
     termination_tolerance = .01
+gamma = .9
 
 
 while (obj_difference > termination_tolerance and ((iteration_number < iteration_limit) and no_loop)):
     iteration_number += 1
     opt_vax_totals[iteration_number] = 0
     vax_dict = {(ar, i): vax_allocation[iteration_number - 1, ar, i] for ar in areas for i in range(T-1)}
-    infected_I, infected_IV, obj, alpha, t_N, most_infected_area, sus_pop, being_exposed, min_compartment = simulate_covid(vax_dictionary=vax_dict)
+    infected_I, infected_IV, obj, alpha, t_N, most_infected_area, sus_pop, min_compartment = simulate_covid(vax_dictionary=vax_dict)
     print(f"Simulation obj is {obj} at iteration {iteration_number}")
     for ar in areas:
         for i in range(T):
@@ -258,11 +257,10 @@ while (obj_difference > termination_tolerance and ((iteration_number < iteration
                                name="diff_vax_agility")  # auxiliary variables. lower bounds because this can be negative
     abso_vax_agility = opt_Mod.addVars(areas, T - 2, name="abso_vax_agility")  # auxiliary variables.
 
-
-
-
-
-
+    if vaccine_incentive:
+        opt_Mod.setObjective(state_variables[donor, "D", T-1] - 1/200000*vax_variables.sum('*', '*'), GRB.MINIMIZE)  # deaths over donor
+    else:
+        opt_Mod.setObjective(state_variables[donor, "D", T-1], GRB.MINIMIZE)  # deaths over donor
 
     if four_binary and strict_policy:
         if p_k == .5:
@@ -272,52 +270,35 @@ while (obj_difference > termination_tolerance and ((iteration_number < iteration
         elif p_k == 1:
             exploration_tolerance *= 3.46
     upper_lim = {ar: rho * N_a[ar] - initial_pop_a[ar, "SV"] for ar in areas}
+    opt_Mod.update()
     if strict_policy:
-        temp_variables_S = opt_Mod.addVars(areas, T, name="temporary_variables_S")
-        temp_variables2_W = opt_Mod.addVars(areas, T-1, name="temporary_variables2_W")
-        opt_Mod.addConstrs((temp_variables_S[ar, 0] == state_variables[ar, "S", 0]
-                            for ar in areas), "temp_0")
-        opt_Mod.addConstrs((temp_variables_S[ar, i] == state_variables[ar, "S", i]
-                            #-alpha[ar, i] *
-            #state_variables[ar, "S", i] * (vectors[ar, i] / N_a[ar])
-                            #subtracting this is necessary. Can't be
-                            #being_exposed[donor, 'S', i]
-                            for ar in areas for i in [*range(1,T-1)]), "temp")
-        opt_Mod.addConstrs((temp_variables2_W[ar, 0] == upper_lim[ar]
-                            for ar in areas), "temp_2_0")
-        opt_Mod.addConstrs((temp_variables2_W[ar, i] == upper_lim[ar] - vax_variables.sum(ar, range(i))
-                            for ar in areas for i in [*range(1,T-1)]), "temp_2_T")
-        """
-        opt_Mod.addConstrs((vax_variables[donor, i] <= temp_variables2_W[donor, i]
-                            for i in [*range(T)]), "Vaccine_Policy_X")
-        opt_Mod.addConstrs((vax_variables[donor, i] <= temp_variables_S[donor, i]
-                            for i in [*range(T)]), "Vaccine_Policy_Y")
-        opt_Mod.addConstrs((vax_variables[donor, i] <= p_k*B_t[i]
-                            for i in [*range(T)]), "Vaccine_Policy_Z")
-        """
-        opt_Mod.addConstrs((vax_variables[donor, i] == gp.min_(temp_variables2_W[donor, i], temp_variables_S[donor, i], constant = p_k*B_t[i])
+        temp_variables2_W = opt_Mod.addVars(T-1, name="temporary_variables2_W")
+        opt_Mod.addConstr(temp_variables2_W[0] == upper_lim[donor], "temp_2_0")
+        opt_Mod.addConstrs((temp_variables2_W[i] == upper_lim[donor] - vax_variables.sum(donor, range(i))
+                            for i in [*range(1,T-1)]), "temp_2_T")
+        opt_Mod.addConstrs((vax_variables[donor, i] == gp.min_(temp_variables2_W[i], state_variables[donor, "S", i], constant = p_k*B_t[i])
                             for i in [*range(10, T-1)]), "Vaccine_Policy_X")
         opt_Mod.addConstrs((vax_variables[donor, i] == p_k*B_t[i]
-                           for i in [*range(1,10)]), "Vaccine_Policy2")
+                           for i in [*range(10)]), "Vaccine_Policy2")
     elif policy:
         opt_Mod.addConstrs((vax_variables[donor, i] <= p_k*B_t[i]
                         for i in [*range(T-1)]), "Vaccine_Policy2")
-    #opt_Mod.addConstrs(vax_variables[ar, i+1] <= vax_variables[ar, i] for ar in areas for i in [*range(T-1)])
-    #opt_Mod.addConstrs(vax_variables[ar, T-1] == 0 for ar in areas)
-    #opt_Mod.addConstrs(vax_variables[ar, 1] == 180 for ar in areas)
-    #crucial. Shows vac less than budget
-    opt_Mod.addConstrs((vax_variables.sum('*', i) <= B_t[i] for i in [*range(T-1)]), "Vax_Budget")
+
+    #Full budget use, described in the appendix
+    if False:
+        opt_Mod.addConstrs((vax_variables.sum('*', i) <= B_t[i] for i in [*range(85,T-1)]), "Vax_Budget")
+        opt_Mod.addConstrs((vax_variables.sum('*', i) == B_t[i] for i in [*range(85)]), "Vax_Budget_e")
+    else:
+        opt_Mod.addConstrs((vax_variables.sum('*', i) <= B_t[i] for i in [*range(T - 1)]), "Vax_Budget")
+
+
     #Only 95% of sus pop are willing to be vaxxed
     opt_Mod.addConstrs((vax_variables.sum(ar, '*') <= upper_lim[ar]
                         for ar in areas), "Vax_Willingness")
     opt_Mod.addConstrs((vax_variables[ar, i] <= state_variables[ar, "S", i]
                         for ar in areas for i in [*range(T-1)]), "Vax_Real")
     print(f"Willingness constraint ensures vaccinations are less than {upper_lim}")
-    if vaccine_incentives:
-        opt_Mod.setObjective(state_variables[donor, "D", T-1] - 1/200000*vax_variables.sum('*', '*'), GRB.MINIMIZE)  # deaths over donor
-    else:
-        opt_Mod.setObjective(state_variables[donor, "D", T-1], GRB.MINIMIZE)  # deaths over donor
-    #opt_Mod.setObjective(state_variables.sum('*', "D", T - 1) - 1/20000*vax_variables.sum('*', '*'), GRB.MINIMIZE)
+
     opt_Mod.addConstrs((state_variables[ar, compartment, 0] == initial_pop_a[ar, compartment]
                         for ar in areas for compartment in initial_pop_states), "initial_states")
     opt_Mod.addConstrs((state_variables[ar, compartment, 0] == 0
@@ -419,24 +400,22 @@ while (obj_difference > termination_tolerance and ((iteration_number < iteration
         #rounds the obj dictionary to be at the term tolerance
         tol = termination_tolerance/2
         rounded_obj = [round(i / tol) * tol for i in list(obj_function_values.values())[2:]]
-        #rounded_obj = [i in obj_function_values.values()]
         number_of_repeated_obj_values = len(rounded_obj)-len(set(rounded_obj))
         if number_of_repeated_obj_values > 2:
             print("Warning: The algorithm is looping. Terminating due to lack of convergence.")
             no_loop = False
-    print(f"objective difference {obj_difference}, infection difference {infection_difference}")
-    gamma = .9
+    print(f"The objective difference is {obj_difference}, and the infection difference is {infection_difference}.")
     exploration_tolerance *= gamma
     #if iteration_number == 3:
     #    no_loop = False
-    print(f"exploration tolerance {exploration_tolerance}")
+    print(f"The exploration tolerance is {exploration_tolerance}")
 
 
 
 
 
 
-print_solution = [[] for i in range(num_areas)]
+print_solution = {ar: [] for ar in areas}
 var_names = []
 var_values = []
 vax_var_names = []
@@ -448,47 +427,38 @@ for var in opt_Mod.getVars():
         # format is ['vax_variables[ISO', '79]']
         day = int(var_name_list[-1][:-1])
         if not four_binary:
-            area_number = var_name_list[0][-3:]
-            print_solution[areas.index(area_number)].append(float(var.x))
+            area_name = var_name_list[0][-3:]
+            print_solution[area_name].append(float(var.x))
         else:
-            area_number = var_name_list[0][-5:]
-            print_solution[int(area_number[-1]) - 1].append(float(var.x))
-        # print(f"At {area_number} on day {day} you should give {var.x} vaccinations.")
+
+            area_name = var_name_list[0][-5:]
+            print_solution[area_name].append(float(var.x))
         if var.x >= 0:
             vax_var_names.append(str(var.varName))
             vax_var_values.append(var.x)
     if str(var.varName)[:5] == "state" and var.x >= 0:
-        #print(str(var.varName))
         if "D," + str(T-1) in str(var.varName):
             total_deaths_opt += var.x
-            print(str(var.varName))
         var_names.append(str(var.varName))
         var_values.append(var.X)
         #if "S" in var.VarName:
         #    print(var.VarName, var.x)
 vax_decision_variables = []
-for i in range(len(print_solution)):
-    print_solution[i] = [0 if j < 0.0001 else j for j in print_solution[i]]
-    print(areas[i], print_solution[i])
-    vax_decision_variables.append(print_solution[i])
-#print(f"Bt is: {B_t}")
-max_day = 0
-for i, j in entering_donor.items():
-    if j == max(entering_donor.values()):
-        max_day = i
-        break
-print("Vaccines given (opt)", np.array(vax_decision_variables).sum(axis=0))
-print("Total vaccines given (opt)", np.array(vax_decision_variables).sum(axis=0).sum())
-print(f"\nThe initial feasible solution had objective value (sim) {first_obj}.\n")
-print(f"After {iteration_number} iterations, we found the solution (opt after time 1) {obj_function_values[iteration_number]}.")
+print("In each area, the vaccines given in each day (rounded) is as follows.")
+for ar in areas:
+    print(ar, [round(j, 1) for j in print_solution[ar]])
+    vax_decision_variables.append(print_solution[ar])
+print("Total vaccines given each day (opt)", np.array(vax_decision_variables).sum(axis=0))
+print("Total vaccines given over the time horizon (opt)", np.array(vax_decision_variables).sum(axis=0).sum(), "\n")
+print(f"The initial feasible solution had objective value (sim) {first_obj}.\n")
+print(f"After {iteration_number} iterations, we found the solution (opt after time 1) {obj_function_values[iteration_number]}.\n")
 print(f"There were {total_deaths_opt} total deaths (opt).")
-print(f"The objective values were (opt) {obj_function_values}.")
-print(f"The vaccine allocation totals (simulation) were {vaccine_allocation_totals}.")
-print(f"The vaccine allocation totals (optimization) were {opt_vax_totals}.")
-print(f"The highest amount of infected people entering the donor area was {max(entering_donor.values())} occuring on day {max_day}")
+print(f"The objective values were (opt) {obj_function_values}.\n")
+print(f"The vaccine allocation totals (optimization) were {opt_vax_totals}.\n"
+      f"This is (probably) lower than the simulated total, which was {vaccine_allocation_totals[iteration_number]}")
 print(f"The total infected people entering the donor area was (sim) {sum(entering_donor.values())}.")
 print(f"The total deaths in the donor area was (opt) {state_variables[donor, 'D', T-1]}")
-print(f"The infection occured on day {t_N} (sim).")
+print(f"The variant occured on day {t_N} (sim).")
 
 if not four_binary:
     if policy:
@@ -510,34 +480,11 @@ with open("simulation_data/" + filename, 'w') as myfile:
     wr.writerows(zip(vax_var_names, vax_var_values))
 print(f"State Variables written to {filename}.")
 opt_Mod.write("solution_sol.sol")
-highest_travel = 0
-lowest_travel = 0
-for key, val in travel_sum.items():
-    if val == max(travel_sum.values()):
-        highest_travel = (key,val)
-    if val == min(travel_sum.values()):
-        lowest_travel = (key, val)
-print(f"the highest travel infected is {highest_travel}, lowest is {lowest_travel}.")
 if policy:
     print(f"Strict policy = {strict_policy}, p^k = {p_k}")
+elif vaccine_incentive:
+    print("We used a vaccine incentive in the objective function, and no policy.")
 else:
     print("No policy was used.")
 print(f"The python file ran for a duration of {time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))}.")
-#x = simulate_covid(vax_dictionary= {(ar, i): vax_allocation[iteration_number, ar, i] for ar in areas for i in [*range(T)]})
-
-
-"""
-temp_variables3_SS = opt_Mod.addVars(T, name="temporary_variables3_SS")
-temp_variables4_WS = opt_Mod.addVars(T, name="temporary_variables4_WS")
-opt_Mod.addConstrs((temp_variables3_SS[i] == temp_variables_S.sum('*', i)
-                    for i in [*range(T)]), "temp_3")
-opt_Mod.addConstrs((temp_variables4_WS[i] == temp_variables2_W.sum('*', i)
-                    for i in [*range(T)]), "temp_4")
-opt_Mod.addConstrs((vax_variables.sum('*', i) == gp.min_(temp_variables4_WS[i], temp_variables3_SS[i], constant = p_k*B_t[i])
-                    for i in [*range(T)]), "Vax_Budget2")
-opt_Mod.addConstrs((temp_variables2[i] == gp.min_(temp_variables[i], constant = B_t[i])
-                    for i in [*range(T)]), "Vaccine_Policy")
-opt_Mod.addConstrs((temp_variables3[i] == gp.min_(temp_variables2[i], temp_variables[i], constant = p_k*B_t[i])
-                    for i in [*range(2,T)]), "temp_3")
-"""
 
