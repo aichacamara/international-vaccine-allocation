@@ -12,7 +12,7 @@ Outputs from Data Manipulation\
 Outputs from the data manipulation .Rmd file. Includes a CSV for the vaccination budget per day and a CSV with model parameters for each of 166 areas.\
 \
 Documentation:\
-Description of each file.\
+Description of each file. Description of global_seir.py terminal and code.\
 Diagrams of how the files work together.\
 Table for each parameter and its source.\
 Literature review ('paper summary')\
