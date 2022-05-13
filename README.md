@@ -6,14 +6,15 @@ Email me at abraham.holleran@gordon.edu for more information or to see the paper
 ## Folder Descriptions
 ### Data wrangling for model inputs:
 CSVs and .Rmd to manipulate the information in the CSVs to be inputs for .py files.
-### Outputs from Data Manipulation:
-Outputs from the data manipulation .Rmd file. Includes a CSV for the vaccination budget per day and a CSV with model parameters for each of 166 areas.
 ### Documentation:
 Description of each file. Description of global_seir.py terminal and code.\
 Diagrams of how the files work together.\
 Table for each parameter and its source.\
 Literature review ('paper summary')
+### Outputs from Data Manipulation:
+Outputs from the data manipulation .Rmd file. Includes a CSV for the vaccination budget per day and a CSV with model parameters for each of 166 areas.
 ### plots:
 Plots for scenarios listed in the paper.
-
+### state variable data:
+CSVs holding the state variable data for plots
 
