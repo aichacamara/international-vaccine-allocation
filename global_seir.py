@@ -73,27 +73,21 @@ def simulate_covid(vax_dictionary):
         for ar in areas:
             if ar == most_infected_area:
                 if i < t_N:
-                    alpha[ar,i] = ALPHA_VALUE
+                    alpha[ar, i] = ALPHA_VALUE
                 else:
-                    alpha[ar,i] = ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D))))               
+                    alpha[ar, i] = ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D))))               
             else:
                 alpha[ar, i] = alpha[most_infected_area, max(i - L, 0)]
     for i in range(T - 1):
         #We need to calculate the infected counts for all areas first
         #That means when we calculate the travel params, we have the info for all areas.
         for ar in areas:
-            if i != 0:
-                weighted_I[ar, i] = state_variables_simu[ar, "I", i] + (1 - p_e) * state_variables_simu[ar, "IV", i]
+           if i != 0:
+                weighted_I[ar, i] = state_variables_simu[ar, "I", i] + (p_e) * state_variables_simu[ar, "IV", i]
                 area_infected_sum[ar, i] = area_infected_sum[ar, i - 1] + weighted_I[ar, i]
         for ar in areas:
-            #if i != 0:  # not a difference equation, just a simplifcation
-            #    weighted_I[ar, i] = state_variables_simu[ar, "I", i] + (1 - p_e) * state_variables_simu[ar, "IV", i]
-            #    area_infected_sum[ar, i] = area_infected_sum[ar, i - 1] + weighted_I[ar, i]
-
-            vectors[ar, i] = weighted_I[ar, i] + (1 / 365)*sum(
-                [T_a_l[l, ar] * (weighted_I[l, i] / (N_a[l]*r_d_t[l])) for l in areas]) \
-                             - (1 / 365)*sum(
-                [T_a_l[ar, l] * (weighted_I[ar, i] / (N_a[ar]*r_d_t[ar])) for l in areas])  # travel
+            vectors[ar, i] = weighted_I[ar, i] 
+            deltaE = min(state_variables_simu[ar, "S", i], alpha[ar, i] * state_variables_simu[ar, "S", i] * vectors[ar, i]/N_a[ar])
             state_variables_simu[ar, "S", i + 1] = state_variables_simu[ar, "S", i] - vax_dictionary[ar, i]\
                         - alpha[ar, i] * state_variables_simu[ar, "S", i] * vectors[ar, i] / N_a[ar]
 
