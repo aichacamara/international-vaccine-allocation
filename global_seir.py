@@ -68,10 +68,15 @@ def simulate_covid(vax_dictionary):
         weighted_I[ar, 0] = state_variables_simu[ar, "I", 0] + (p_e) * state_variables_simu[
             ar, "IV", 0]  # initial vectors
         area_infected_sum[ar, 0] = weighted_I[ar, 0]
-    alpha = {(most_infected_area, i): ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D)))) for i in range(T-1)}
+   # alpha = {(most_infected_area, i): ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D)))) for i in range(T-1)}   # Calculates alpha(t)
     for i in range(T-1):
         for ar in areas:
-            if ar != most_infected_area:
+            if ar == most_infected_area:
+                if i < t_N:
+                    alpha[ar,i] = ALPHA_VALUE
+                else:
+                    alpha[ar,i] = ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D))))               
+            else:
                 alpha[ar, i] = alpha[most_infected_area, max(i - L, 0)]
     for i in range(T - 1):
         #We need to calculate the infected counts for all areas first
