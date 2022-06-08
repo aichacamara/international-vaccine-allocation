@@ -69,14 +69,13 @@ def simulate_covid(vax_dictionary):
             ar, "IV", 0]  # initial vectors
         area_infected_sum[ar, 0] = weighted_I[ar, 0]
    # alpha = {(most_infected_area, i): ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D)))) for i in range(T-1)}   # Calculates alpha(t)
+    alpha = {(most_infected_area, i): ALPHA_VALUE for i in range(T-1)}  # initialize alpha for the most infected area.
     for i in range(T-1):
-        for ar in areas:
-            if ar == most_infected_area:
-                if i < t_N:
-                    alpha[ar, i] = ALPHA_VALUE
-                else:
-                    alpha[ar, i] = ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D))))               
-            else:
+        if i >= t_N:
+            alpha[most_infected_area, i] = ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D))))
+    for ar in areas:
+        if ar != most_infected_area:
+            for i in range(T-1):
                 alpha[ar, i] = alpha[most_infected_area, max(i - L, 0)]
     for i in range(T - 1):
         #We need to calculate the infected counts for all areas first
@@ -88,25 +87,17 @@ def simulate_covid(vax_dictionary):
         for ar in areas:
             vectors[ar, i] = weighted_I[ar, i] 
             deltaE = min(state_variables_simu[ar, "S", i], alpha[ar, i] * state_variables_simu[ar, "S", i] * vectors[ar, i]/N_a[ar])
-            state_variables_simu[ar, "S", i + 1] = state_variables_simu[ar, "S", i] - vax_dictionary[ar, i]\
-                        - alpha[ar, i] * state_variables_simu[ar, "S", i] * vectors[ar, i] / N_a[ar]
+            deltaSV = min(state_variables_simu[ar, "S", i] - deltaE, vax_dictionary[ar,i])
+            deltaEV = min(state_variables_simu[ar, "SV", i] + deltaSV,\
+                         p_r * alpha[ar, i] * state_variables_simu[ar, "SV", i] * vectors[ar, i] * (1 / N_a[ar]))
 
-            state_variables_simu[ar, "S", i+1] = max(state_variables_simu[ar, "S", i+1], 0)
+            state_variables_simu[ar, "S", i + 1] = state_variables_simu[ar, "S", i] - deltaSV - deltaE
             sus_pop[ar, i] = state_variables_simu[ar, "S", i]
-
-            state_variables_simu[ar, "E", i + 1] = state_variables_simu[ar, "E", i] + alpha[ar, i] * \
-                                                    state_variables_simu[ar, "S", i]* vectors[ar, i] / N_a[ar] - r_l * \
-                                                   state_variables_simu[ar, "E", i]
+            state_variables_simu[ar, "E", i + 1] = state_variables_simu[ar, "E", i] + deltaE - r_l * state_variables_simu[ar, "E", i]
             state_variables_simu[ar, "I", i + 1] = state_variables_simu[ar, "I", i] + r_l * state_variables_simu[
                 ar, "E", i] - r_d_t[ar] * state_variables_simu[ar, "I", i]
-            state_variables_simu[ar, "SV", i + 1] = max(state_variables_simu[ar, "SV", i] + vax_dictionary[
-                ar, i] - p_r * alpha[ar, i] * state_variables_simu[ar, "SV", i] * vectors[ar, i] * (
-                                                                1 / N_a[ar]),0)
-                                                #1/(N_a[ar]-state_variables_simu[ar, "R", i]- state_variables_simu[ar,"D", i]))
-            state_variables_simu[ar, "EV", i + 1] = state_variables_simu[ar, "EV", i] + p_r * alpha[ar, i] * \
-                                                     state_variables_simu[
-                                                        ar, "SV", i] * vectors[ar, i] / N_a[ar] - r_l * \
-                                                    state_variables_simu[ar, "EV", i]
+            state_variables_simu[ar, "SV", i + 1] = state_variables_simu[ar, "SV", i] + deltaSV - deltaEV
+            state_variables_simu[ar, "EV", i + 1] = state_variables_simu[ar, "EV", i] + deltaEV - r_l * state_variables_simu[ar, "EV", i]
             state_variables_simu[ar, "IV", i + 1] = state_variables_simu[ar, "IV", i] + r_l * state_variables_simu[
                 ar, "EV", i] - r_d_t[ar] * state_variables_simu[ar, "IV", i]
             state_variables_simu[ar, "H", i + 1] = state_variables_simu[ar, "H", i] + r_d_t[ar] * p_H * state_variables_simu[
