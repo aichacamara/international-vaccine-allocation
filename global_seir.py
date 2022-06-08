@@ -57,15 +57,15 @@ def simulate_covid(vax_dictionary):
     print(f"------------------starting simulation----------------")
     print(f"Variant debug info: t_N = {t_N}, most infected area = {most_infected_area}.")
     state_variables_simu = {(ar, state_var, i): 0 for ar in areas for i in range(T) for state_var in state_vars}
-    weighted_I =  {(ar, i): 0 for ar in areas for i in range(T)}
-    vectors = {(ar, i): 0 for ar in areas for i in range(T)}
+    weighted_I =  {(ar, i): 0 for ar in areas for i in range(T)}  # effective infectious population
+    vectors = {(ar, i): 0 for ar in areas for i in range(T)}  # script V in the paper
     infected_sum = 0
     area_infected_sum = {(ar, i): 0 for ar in areas for i in range(T)}
     sus_pop = {}
     for ar in areas:
         for state_var in initial_pop_states:
             state_variables_simu[ar, state_var, 0] = initial_pop_a[ar, state_var]
-        weighted_I[ar, 0] = state_variables_simu[ar, "I", 0] + (1 - p_e) * state_variables_simu[
+        weighted_I[ar, 0] = state_variables_simu[ar, "I", 0] + (p_e) * state_variables_simu[
             ar, "IV", 0]  # initial vectors
         area_infected_sum[ar, 0] = weighted_I[ar, 0]
     alpha = {(most_infected_area, i): ALPHA_VALUE + lmbda / (1 + np.exp(-k * (i - (t_N + T_D)))) for i in range(T-1)}
