@@ -4,7 +4,7 @@
     # Reading inputs: I have listed the names of the inputs, which you should recognize but might differ slightly from yours.
     # Simulate: I call a function simulate(), which is intended to be what you wrote. Printing/writing output should NOT be in simulate().
       # Computing alpha[a,t] should be in simulate(). If not, add it to formulate_LP() 
-    # Writing "simulation data" file: I refer to Abraham's code. It won't work, partly b/c we chaged inputs.
+    # Writing "simulation data" file: I refer to Abraham's code. It won't work, partly b/c we changed inputs.
     # Error checking, e.g., whether the two simulation limits were reached
     # Better stopping criteria for outer loop: |fx - fy| < delta does NOT imply fx or fy is within delta of min. 
 # Some parts are not correct syntax. Where I don't know the syntax, I generally use comments.
@@ -17,7 +17,7 @@
 # After solving, the optimal values of variables are reference, e.g., V1.x[a,t] for V1[a,t] 
 
 # Calling functions: All variables are treated as global, so there are no arguments. 
-# In some cases, when they compute new values they are give nnew names: V is the input to simulate(), V_act is the output.
+# In some cases, when they compute new values they are give new names: V is the input to simulate(), V_act is the output.
 # In some cases, the same variable is updated: tn and m get updated in optimize_inner().
 
 import gurobipy as gp
@@ -36,13 +36,13 @@ from parameters import * #pk, lambda_0, phi, eps_0, delta_I, delta, beta, iter_l
 
 donor = "area1"
 rd = {a: r0 + delta_r[a]) for a in areas}
-B = {t: B0 * b(t) for T in [0,T-1]}  # If no b(t) in input file, use b(t) = 1
+B = {t: B0 * b(t) for t in range(T)}  # If no b(t) in input file, use b(t) = 1. # range(T): 0, ..., T-1
 k = log((1-p)/p)/TD
 
 # num_areas = len(areas)    # Not needed?
 
-# Initial States. These are constants of LP. Varaibles of LP are named E1, etc.
-
+# Initial States. These are constants of LP. Variables of LP are named E1, etc.
+W = E = EV = I = IV = SV = S = H = D = R = {(a,t): 0 for a in areas for t in range(T+1)}
 E[a,0]  = {a: (1 - rho_V[a]) / (pr*rho_V[a] + 1 - rho_V[a]) /rI * rho_I[a] * N[a] for a in areas}
 EV[a,0] = {a: (pr*rho_V[a]) / (pr*rho_V[a] + 1 - rho_V[a]) /rI * rho_I[a] * N[a] for a in areas}
 I[a,0]  = {a: (1 - rho_V[a]) / (pr*rho_V[a] + 1 - rho_V[a]) /(r0 + delta_r[a]) * rho_I[a] * N[a] for a in areas}
@@ -58,8 +58,8 @@ W[a,0]  = {a: rho[a]*N[a] - SV[a,0] - EV[a,0] - IV[a,0] - rho[a]*E[a,0] - rho[a]
 # Initialize first Simulate
 
 S_dot = S.sum(a,0) - S[donor,0]     # Sum of nondonor S at time 0
-V[a,t]  = {a,t: (1 - pk) * S[a,0]/Sdot * B[t] for a in areas for t in [0,T-1]}
-V[donor,t]  = {t: pk * B[t] for t in [0,T-1]}
+V  = {(a,t): (1 - pk) * S[a,0]/Sdot * B[t] for a in areas for t in range(T)}
+V[donor,t]  = {t: pk * B[t] for t in range(T)}
 
 #Create a simulate object
 
@@ -75,12 +75,12 @@ def optimize_inner():
 
     j = 0
     eps = eps_0
-    zLP = {j: 0 for j in [0,iter_lmt]} # Define vector zLP and set to 0
+    zLP = {j: 0 for j in range(iter_lmt)} # Define vector zLP and set to 0
     
-    while abs(zLP[j] - z[max(0,j-1)]) > delta_I or i < 2:
+    while abs(zLP[j] - zLP[max(0,j-1)]) > delta_I or j < 2:
         j = j + 1
         solve_LP()
-        V[a,t]  = {a,t: V1.x[a,t] for a in areas for t in [0,T-1]}  # Update V using optimal V1 from LP
+        V = {(a,t): V1.x[a,t] for a in areas for t in range(T)}  # Update V using optimal V1 from LP
         simulate()                                             
         eps = beta*eps
     z[i] = D1[donor,T]   #Donor deaths from LP solution
@@ -93,7 +93,7 @@ def formulate_LP()
     # key outputs:  LP model
     
     t_int = ceil(tn)
-    V_cal = {a, t: I[a, t] + pe*IV[a, t] for a in areas for t in range(T-1) } # "vectors" (constants)
+    V_cal = {(a,t): I[a,t] + pe*IV[a,t] for a in areas for t in range(T) } # "vectors" (constants)
 
     # Compute alpha[a,t] here if not done in simulate()?? 
       # Use constant rate before tn or tn + L and variable rate after
@@ -103,7 +103,7 @@ def formulate_LP()
 
     # Define LP variables, e.g., S1 for state var S. All are continuous and nonnegative by default. 
 
-    S1 = v.addVars(areas, range(1,T+1), name="S1")
+    S1 = v.addVars(areas, range(1,T+1), name="S1")  # range(1,T+1): 1, ..., T
     SV1 = v.addVars(areas, range(1,T+1), name="SV1")
     E1 = v.addVars(areas, range(1,T+1), name="E1")
     EV1 = v.addVars(areas, range(1,T+1), name="EV1")
@@ -113,119 +113,123 @@ def formulate_LP()
     D1 = v.addVars(areas, range(1,T+1), name="D1")
     R1 = v.addVars(areas, range(1,T+1), name="R1")
     W1 = v.addVars(areas, range(1,T+1), name="W1")
-    V1 = v.addVars(areas, T, name="V1")
+    V1 = v.addVars(areas, T, name="V1")             # t = 0, ..., T-1
+
 
     if non_donor_deaths_flag == 0: #or FALSE
-        v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a, t] for a in areas for t in range(t_int) ) \
+        v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a,t] for a in areas for t in range(1, t_int + 1) ) \
             + 1/200000*D1.sum('*', T), GRB.MINIMIZE)  # include non-donor deaths w/ small weight
+                                                    # Omit constant I[a,0] from objective, so t = 1, ..., t_int
     else:
-            v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a, t] for a in areas for t in range(t_int) ), \
+            v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a, t] for a in areas for t in range(1, t_int + 1) ), \
                  GRB.MINIMIZE)
-    v.addConstrs((V1[donor, t] <= pk*B[t] for t in range(T-1)), "Policy: donor limit") # constraint must be in () if name argument used
-    v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T-1)), "Vaccine budget")                  
+                 
+    v.addConstrs((V1[donor, t] <= pk*B[t] for t in range(T)), "Policy: donor limit") # constraint must be in () if name argument used
+    v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T)), "Vaccine budget")                  
 
     # Dynamics for start time t=1 to T-1
     v.addConstrs((W1[a,t+1] == W1[a,t] - alpha[a,t]*V_cal[a,t]/N[a]*W1[a,t] - V1[a,t] \
-                        for a in areas for t in range(1,T-1)), "Vaccine willingness")
+                        for a in areas for t in range(1,T)), "Vaccine willingness")
     v.addConstrs((S1[a,t+1] == S1[a,t] - alpha[a,t]*V_cal[a,t]/N[a]*S1[a,t] - V1[a,t] \
-                        for a in areas for t in range(1,T-1)), "S")                    
+                        for a in areas for t in range(1,T)), "S")                    
     v.addConstrs((SV1[a,t+1] == SV1[a,t] - pr*alpha[a,t]*V_cal[a,t]/N[a]*SV1[a,t] + V1[a,t] \
-                        for a in areas for t in range(1,T-1)), "SV")
+                        for a in areas for t in range(1,T)), "SV")
     v.addConstrs((E1[a,t+1] == E1[a,t] + alpha[a,t]*V_cal[a,t]/N[a]*S[a,t] - rI*E1[a,t] \
-                        for a in areas for t in range(1,T-1)), "E")  
+                        for a in areas for t in range(1,T)), "E")  
     v.addConstrs((EV1[a,t+1] == EV1[a,t] + pr*alpha[a,t]*V_cal[a,t]/N[a]*SV1[a,t] - rI*EV1[a,t] \
-                        for a in areas for t in range(1,T-1)), "EV")
+                        for a in areas for t in range(1,T)), "EV")
     v.addConstrs((I1[a,t+1] == I1[a,t] + rI*E1[a,t] - rd*I1[a,t] \
-                        for a in areas for t in range(1,T-1)), "I")
+                        for a in areas for t in range(1,T)), "I")
     v.addConstrs((IV1[a,t+1] == IV1[a,t] + rI*EV1[a,t] - rd*IV1[a,t] \
-                        for a in areas for t in range(1,T-1)), "IV")
+                        for a in areas for t in range(1,T)), "IV")
     v.addConstrs((H1[a,t+1] == H1[a,t] + rd*pH*I1[a,t] + rd*pHV*IV1[a,t] - rR*H1[a,t] \ 
-                        for a in areas for t in range(1,T-1)), "H")
+                        for a in areas for t in range(1,T)), "H")
     v.addConstrs((D1[a,t+1] == D1[a,t] + rR*pD*H1[a,t] \
-                        for a in areas for t in range(1,T-1)), "D")
+                        for a in areas for t in range(1,T)), "D")
     v.addConstrs((R1[a,t+1] == R1[a,t] + rR*(1 - pD)*H1[a,t] + rd*(1 - pH)*I1[a,t] + rd*(1 - pHV)*IV1[a,t] \
-                        for a in areas for t in range(1,T-1)), "R")
+                        for a in areas for t in range(1,T)), "R")
 
     # Dynamics for start time t=0. Use constant W[a,0} etc. (but variable V1). Use same constraint names??
     v.addConstrs((W1[a,1] == W[a,0] - alpha[a,0]*V_cal[a,0]/N[a]*W[a,0] - V1[a,0] \
-                        for a in areas), "Vaccine willingness")
+                        for a in areas), "Vaccine willingness t=0")
     v.addConstrs((S1[a,1] == S[a,0] - alpha[a,0]*V_cal[a,0]/N[a]*S[a,0] - V1[a,0] \
-                        for a in areas), "S")                   
+                        for a in areas), "S t=0")                   
     v.addConstrs((SV1[a,1] == SV[a,0] - pr*alpha[a,0]*V_cal[a,0]/N[a]*SV[a,0] + V1[a,0] \
-                        for a in areas), "SV")
+                        for a in areas), "SV t=0")
     v.addConstrs((E1[a,1] == E[a,0] + alpha[a,t]*V_cal[a,0]/N[a]*S[a,0] - rI*E[a,0] \
-                        for a in areas), "E")  
+                        for a in areas), "E t=0")  
     v.addConstrs((EV1[a,1] == EV[a,0] + pr*alpha[a,0]*V_cal[a,0]/N[a]*SV[a,0] - rI*EV[a,0] \
-                        for a in areas), "EV")
-    v.addConstrs((I1[a,1] == I1[a,0] + rI*E[a,0] - rd*I[a,0] \
-                        for a in areas, "I")
+                        for a in areas), "EV t=0")
+    v.addConstrs((I1[a,1] == I[a,0] + rI*E[a,0] - rd*I[a,0] \
+                        for a in areas), "I t=0")
     v.addConstrs((IV1[a,1] == IV[a,0] + rI*EV[a,0] - rd*IV[a,0] \
-                        for a in areas), "IV")
+                        for a in areas), "IV t=0")
     v.addConstrs((H1[a,1] == H[a,0] + rd*pH*I[a,0] + rd*pHV*IV[a,0] - rR*H[a,0] \ 
-                        for a in areas), "H")
+                        for a in areas), "H t=0")
     v.addConstrs((D1[a,1] == D[a,0] + rR*pD*H[a,0] \
-                        for a in areas), "D")
+                        for a in areas), "D t=0")
     v.addConstrs((R1[a,1] == R[a,0] + rR*(1 - pD)*H[a,0] + rd*(1 - pH)*I[a,0] + rd*(1 - pHV)*IV[a,0] \
-                        for a in areas), "R")
+                        for a in areas), "R t=0")
 
     # Regularization constraints on I, IV
-    v.addConstrs((I1[a,t] - I[a,t] <= eps for a in areas for t in range(1,T)), "I upper bd")
-    v.addConstrs((I1[a,t] - I[a,t] >= -eps for a in areas for t in range(1,T)), "I lower bd")
-    v.addConstrs((IV1[a,t] - IV[a,t] <= eps for a in areas for t in range(1,T)), "IV upper bd")
-    v.addConstrs((IV1[a,t] - IV[a,t] >= -eps for a in areas for t in range(1,T)), "IV lower bd")
+    v.addConstrs((I1[a,t] - I[a,t] <= eps for a in areas for t in range(1,T+1)), "I upper bd")
+    v.addConstrs((I1[a,t] - I[a,t] >= -eps for a in areas for t in range(1,T+1)), "I lower bd")
+    v.addConstrs((IV1[a,t] - IV[a,t] <= eps for a in areas for t in range(1,T+1)), "IV upper bd")
+    v.addConstrs((IV1[a,t] - IV[a,t] >= -eps for a in areas for t in range(1,T+1)), "IV lower bd")
 
  def solve_LP()          
     # key inputs: I, IV, tn, m, lambda[i], eps
     # key outputs:  V[a,t] (actual vacc), zLP[j] (optimal objective value)
 
     t_int = ceil(tn)
-    V_cal = {a, t: I[a, t] + pe*IV[a, t] for a in areas for t in range(T-1) } # "vectors" (constants)
+    V_cal = {(a,t): I[a,t] + pe*IV[a,t] for a in areas for t in range(T) } # "vectors" (constants)
 
     # Compute alpha[a,t] here if not done in simulate()?? 
       # Needs to include constant rate before tn or tn + L and variable rate after
 
-    # Objective changes with lambda (outer loop) and tn (inner loop). Omit constant I[a,0] from objective.
+    # Objective changes with lambda (outer loop) and tn (inner loop). 
 
     if non_donor_deaths_flag == 0: #or FALSE
-        v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a, t] for a in areas for t in range(t_int) ) \
+        v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a,t] for a in areas for t in range(1, t_int + 1) ) \
             + 1/200000*D1.sum('*', T), GRB.MINIMIZE)  # include non-donor deaths w/ small weight
+                                                    # Omit constant I[a,0] from objective, so t = 1, ..., t_int
     else:
-            v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a, t] for a in areas for t in range(t_int) ), \
-            GRB.MINIMIZE)
+            v.setObjective(D1[donor, T] + lambda[i]*sum(I1[a, t] for a in areas for t in range(1, t_int + 1) ), \
+                 GRB.MINIMIZE)
 
     # Constraints change with alpha, V_cal (inner loop)
     # Assumes that addConstrs REPLACES constraints with the same name.
 
     # Start time t=1 to T-1
-    v.addConstrs((W1[a,1] == W[a,0] - alpha[a,0]*V_cal[a,0]/N[a]*W[a,0] - V1[a,0] \
-                        for a in areas), "Vaccine willingness")
-    v.addConstrs((S1[a,1] == S[a,0] - alpha[a,0]*V_cal[a,0]/N[a]*S[a,0] - V1[a,0] \
-                        for a in areas), "S")                   
-    v.addConstrs((SV1[a,1] == SV[a,0] - pr*alpha[a,0]*V_cal[a,0]/N[a]*SV[a,0] + V1[a,0] \
-                        for a in areas), "SV")
-    v.addConstrs((E1[a,1] == E[a,0] + alpha[a,t]*V_cal[a,0]/N[a]*S[a,0] - rI*E[a,0] \
-                        for a in areas), "E")  
-    v.addConstrs((EV1[a,1] == EV[a,0] + pr*alpha[a,0]*V_cal[a,0]/N[a]*SV[a,0] - rI*EV[a,0] \
-                        for a in areas), "EV")
+    v.addConstrs((W1[a,t+1] == W1[a,t] - alpha[a,t]*V_cal[a,t]/N[a]*W1[a,t] - V1[a,t] \
+                        for a in areas for t in range(1,T)), "Vaccine willingness")
+    v.addConstrs((S1[a,t+1] == S1[a,t] - alpha[a,t]*V_cal[a,t]/N[a]*S1[a,t] - V1[a,t] \
+                        for a in areas for t in range(1,T)), "S")                    
+    v.addConstrs((SV1[a,t+1] == SV1[a,t] - pr*alpha[a,t]*V_cal[a,t]/N[a]*SV1[a,t] + V1[a,t] \
+                        for a in areas for t in range(1,T)), "SV")
+    v.addConstrs((E1[a,t+1] == E1[a,t] + alpha[a,t]*V_cal[a,t]/N[a]*S[a,t] - rI*E1[a,t] \
+                        for a in areas for t in range(1,T)), "E")  
+    v.addConstrs((EV1[a,t+1] == EV1[a,t] + pr*alpha[a,t]*V_cal[a,t]/N[a]*SV1[a,t] - rI*EV1[a,t] \
+                        for a in areas for t in range(1,T)), "EV")
 
     # Start time t=0
     v.addConstrs((W1[a,1] == W[a,0] - alpha[a,0]*V_cal[a,0]/N[a]*W[a,0] - V1[a,0] \
-                        for a in areas), "Vaccine willingness")
+                        for a in areas), "Vaccine willingness t=0")
     v.addConstrs((S1[a,1] == S[a,0] - alpha[a,0]*V_cal[a,0]/N[a]*S[a,0] - V1[a,0] \
-                        for a in areas), "S")                   
+                        for a in areas), "S t=0")                   
     v.addConstrs((SV1[a,1] == SV[a,0] - pr*alpha[a,0]*V_cal[a,0]/N[a]*SV[a,0] + V1[a,0] \
-                        for a in areas), "SV")
+                        for a in areas), "SV t=0")
     v.addConstrs((E1[a,1] == E[a,0] + alpha[a,t]*V_cal[a,0]/N[a]*S[a,0] - rI*E[a,0] \
-                        for a in areas), "E")  
+                        for a in areas), "E t=0")  
     v.addConstrs((EV1[a,1] == EV[a,0] + pr*alpha[a,0]*V_cal[a,0]/N[a]*SV[a,0] - rI*EV[a,0] \
-                        for a in areas), "EV")
+                        for a in areas), "EV t=0")
 
     # Constraints change with I, IV, eps (inner loop)
-     # Regularization constraints on I, IV
-    v.addConstrs((I1[a,t] - I[a,t] <= eps for a in areas for t in range(1,T)), "I upper bd")
-    v.addConstrs((I1[a,t] - I[a,t] >= -eps for a in areas for t in range(1,T)), "I lower bd")
-    v.addConstrs((IV1[a,t] - IV[a,t] <= eps for a in areas for t in range(1,T)), "IV upper bd")
-    v.addConstrs((IV1[a,t] - IV[a,t] >= -eps for a in areas for t in range(1,T)), "IV lower bd")
+      # Regularization constraints on I, IV
+    v.addConstrs((I1[a,t] - I[a,t] <= eps for a in areas for t in range(1,T+1)), "I upper bd")
+    v.addConstrs((I1[a,t] - I[a,t] >= -eps for a in areas for t in range(1,T+1)), "I lower bd")
+    v.addConstrs((IV1[a,t] - IV[a,t] <= eps for a in areas for t in range(1,T+1)), "IV upper bd")
+    v.addConstrs((IV1[a,t] - IV[a,t] >= -eps for a in areas for t in range(1,T+1)), "IV lower bd")
 
     try:
         v.optimize()
@@ -257,10 +261,10 @@ simulate()
 # Notation: f = z[i] = donor deaths, x = lambda[i]
 
 phase = 1
-lambda = {i: 0 for i in [0,iter_lmt_search]} # Define vector
+lambda = {i: 0 for i in range(1, iter_lmt_search + 1)} # Define vector
 lamba[1] = lambda_0
 lambda[2] = lambda_0*phi
-z = {i: 0 for i in [0,iter_lmt_search]} # Define vector and set z[0] = 0
+z = {i: 0 for i in range(1, iter_lmt_search + 1)} # Define vector and set z[0] = 0
 
 # Iterations 1 and 2
 i = 1
@@ -285,7 +289,7 @@ If fL > fR: 	    #f is decreasing, search to right
 
 # Phase 1 Main loop
 
-While (iter < iter_lmt_search and phase == 1)
+While (i < iter_lmt_search and phase == 1)
     i = i + 1
     lambda[i] = mult*x2
     x3 = lambda[i]	        #3rd of 3 current x values
@@ -316,7 +320,7 @@ If x1 > x3:
 x = a + 0.618 * (b - a) 	#current larger x value
 y = b - 0.618 * (b - a)		#current smaller x value
 i = i + 1
-lambda[i] = X
+lambda[i] = x
 optimize_inner() 
 fx = z[i]                   #f(x)
 i = i + 1
@@ -326,7 +330,7 @@ fy = z[i]                   #f(y)
 
 # Phase 2 main loop
 
-while (abs(fx - fy) > delta and iter < iter_lmt_search)
+while (abs(fx - fy) > delta and i < iter_lmt_search)
     i = i + 1
     if fx > fy           		# minimum is in [a,x], so update y
         b, x, fx = (x, y, fy)
@@ -349,7 +353,7 @@ if (fy <= fx):
     lambda_opt = y
 else
     z_opt = fx 
-    lambda_opt = X
+    lambda_opt = x
 
 # v.write("seir_opt.lp")  # This writes a file in LP format: equations are written out, with values of constants. Omit?
         # If kept, name the file using names of input files. Doing it here writes the last LP solved.
