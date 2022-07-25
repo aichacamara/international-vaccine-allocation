@@ -13,3 +13,5 @@ epsilon = 100
 epsilon_prime = 0.01
 beta = .9
 n_max = 20
+
+realloc_flag = True

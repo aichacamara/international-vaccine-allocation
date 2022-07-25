@@ -465,7 +465,7 @@ else:
     print_area = "four_countries_"
 filename = f"donor_{print_area}global_simulation_{ALPHA_VALUE}_alpha.csv"
 with open("simulation_data/" + filename, 'w') as myfile:
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    wr = csv.writer(myfile, quoting = csv.QUOTE_ALL)
     wr.writerows(zip(var_names, var_values))
     wr.writerows(zip(vax_var_names, vax_var_values))
 print(f"State Variables written to {filename}.")

@@ -17,5 +17,7 @@ T = 180         # Time horizon
 # b seems to be this value repeated T times, will ask if that is correct
 B_0 = 1750      # Vaccine available day 1
 
+b = []          # Vaccine available as a proportion of that available on day 0
+
 
 

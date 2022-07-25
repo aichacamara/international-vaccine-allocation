@@ -9,11 +9,16 @@ A = [           # The set of areas to be simulated
 
 D = "area1"    # The donor area
 
-m = "IND"       # Variant area
+m = "area1"       # Variant area
 
 n = 1000000000  # The number of person infection days until new variant
 
-# N = will be propagated eventually, do not have data to propogate right now
+N = {           # The population for each area
+        "area1": 100000,
+        "area2": 100000,
+        "area3": 100000,
+        "area4": 100000
+    }
 
 rho_V = {       # The vaccination rates for each area
         "area1": 0.432,
@@ -22,7 +27,7 @@ rho_V = {       # The vaccination rates for each area
         "area4": 0.010
     }
 
-rho_I_N = {     # Initial cases per day by area
+rho_I_N = {     # Initial cases per day
         "area1": 27.1,
         "area2": 9.96,
         "area3": 32.8,
