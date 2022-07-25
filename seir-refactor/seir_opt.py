@@ -1,9 +1,9 @@
-import numpy as np
+# import numpy as np
 import time
 import math
 
-from areas import *
-from scenario import *
+from areas_test import *
+from scenario_test import *
 from run_params import *
 
 
@@ -29,13 +29,13 @@ def simulate():
     W = {(area, t): 0 for area in A for t in range(0, T)}
     V_calligraphy = {(area, t): 0 for area in A for t in range(0, T)}
     alpha = {(area, t): 0 for area in A for t in range(0, T)}
-    alpha_0 = {{area}: a_0*gamma[area] for area in A}       # Store initial alpha
+    alpha_0 = {(area): a_0 * gamma[area] for area in A}       # Store initial alpha
     delta_E = {(area, t): 0 for area in A for t in range(0, T)}
     V = {(area, t): 0 for area in A for t in range(0, T)}
     V_star = {(area, t): 0 for area in A for t in range(0, T)}
     V_plus = {(area, t): 0 for area in A for t in range(0, T)}
     N_dot = {(t): 0 for t in range(0, T)}
-    r_d = {{area}: r_0 + delta_r[area] for area in A}
+    r_d = {(area): r_0 + delta_r[area] for area in A}
 
 
     # Set up initial values for the state equations
@@ -52,19 +52,19 @@ def simulate():
 
 
     if len(b) == 0:
-        B = {{t}: B_0 * 1 for t in range(0, T)}
+        B = {(t): B_0 * 1 for t in range(0, T)}
     else:
-        B = {{t}: B_0 * b[t] for t in range(0, T)}
+        B = {(t): B_0 * b[t] for t in range(0, T)}
     
     S_dot = 0
     for area in A:
         if area != donor:
             S_dot += S[area, 0]       # Sum of nondonor S at time 0
     
-    for area in V:
+    for area in A:
         for t in range(0, T):
             if area != donor:
-                V[area, t] = (1 - p_k) * (S[area, 0]/S_dot)*B[t]
+                V[area, t] = (1 - p_k) * (S[area, 0]/S_dot) * B[t]
             else:
                 V[area, t] = p_k * B[t]
 
@@ -92,6 +92,11 @@ def simulate():
             delta_E[donor, t] = min(S[donor, t], alpha[donor, t]*S[donor, t]*V_calligraphy[donor, t]/N[donor])
             # v star (equation 8)
             V_star[donor, t] = min(W[donor, t] - W[donor, t]*delta_E[donor, t]/S[donor, t], V[donor, t])
+            # compute equation 13
+            N_dot = 0
+            for a in A:
+                if a != donor and W[area, t + 1] > 0:
+                    N_dot += N[a]
 
         # loop over areas
         for area in A:
@@ -104,13 +109,7 @@ def simulate():
             W[area, t + 1] = W[area, t] - W[area, t]*delta_E[area, t]/S[area, t] - V_star[area, t]
 
             # if realloc flag is true
-            if realloc_flag:
-                # compute equation 13
-                N_dot = 0
-                for a in A:
-                    if a != donor and W[area, t + 1] > 0:
-                        N_dot += N[a]
-                            
+            if realloc_flag:    
                 if area != donor and W[area, t + 1] > 0:
                     # compute equation 14
                     V_plus[area, t] = V[area, t] + (N[area]/N_dot) * (V[donor, t] - V_star[donor, t])
@@ -151,7 +150,21 @@ def simulate():
                 # if true calculate equation 11 (t_n)
                 t_n = t - 1 + (I_sum - n)/(I_tot)
     with open("outputs.log", "w") as outputs:
-        outputs.writelines("")
+        outputs.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
+        donor_vaccinations = 0
+        for t in range(0, T):
+            donor_vaccinations += V_star[donor, t]
+        outputs.writelines("Donor Vaccinations: " + str(donor_vaccinations) + "\n")
+        total_deaths = 0
+        total_vaccinations = 0
+        for area in A: 
+            for t in range(0, T):
+                total_deaths += D[area, t]
+                total_vaccinations += V_star[area, t]
+
+        outputs.writelines("Total Deaths: " + str(total_deaths) + "\n")
+        outputs.writelines("Total Vaccinations: " + str(total_vaccinations) + "\n")
+
 
 
 simulate()
