@@ -7,6 +7,10 @@ from scenario import *
 from run_params import *
 
 
+# Calculate constant from given inputs
+k = math.log((1-p)/p)/T_D     #natural log, ln()
+
+
 def simulate():
     '''
     Preforms and SEIR simulation based on data imported from areas, scenario, 
@@ -27,20 +31,12 @@ def simulate():
     alpha = {(area, t): 0 for area in A for t in range(0, T)}
     alpha_0 = {{area}: a_0*gamma[area] for area in A}       # Store initial alpha
     delta_E = {(area, t): 0 for area in A for t in range(0, T)}
+    V = {(area, t): 0 for area in A for t in range(0, T)}
     V_star = {(area, t): 0 for area in A for t in range(0, T)}
     V_plus = {(area, t): 0 for area in A for t in range(0, T)}
     N_dot = {(t): 0 for t in range(0, T)}
     r_d = {{area}: r_0 + delta_r[area] for area in A}
 
-    if len(b) == 0:
-        B = {{t}: B_0 * 1 for t in range(0, T)}
-    else:
-        B = {{t}: B_0 * b[t] for t in range(0, T)}
-
-
-    S_dot = S.sum(a,0) - S[donor,0]     # Sum of nondonor S at time 0
-    V[a,t]  = {a,t: (1 - pk) * S[a,0]/Sdot * B[t] for a in areas for t in [0,T-1]}
-    V[donor,t]  = {t: pk * B[t] for t in [0,T-1]}
 
     # Set up initial values for the state equations
     for area in A:
@@ -54,35 +50,76 @@ def simulate():
         V_calligraphy[area, 0] = I[area, 0] + p_e*I_V[area, 0]
         alpha[area, 0] = alpha_0[area]  # Initialize alpha in relation to time
 
+
+    if len(b) == 0:
+        B = {{t}: B_0 * 1 for t in range(0, T)}
+    else:
+        B = {{t}: B_0 * b[t] for t in range(0, T)}
+    
+    S_dot = 0
+    for area in A:
+        if area != donor:
+            S_dot += S[area, 0]       # Sum of nondonor S at time 0
+    
+    for area in V:
+        for t in range(0, T):
+            if area != donor:
+                V[area, t] = (1 - p_k) * (S[area, 0]/S_dot)*B[t]
+            else:
+                V[area, t] = p_k * B[t]
+
     variant_emerge = False
 
     # loop over time
     for t in range(0, T):
+        # alpha calculated (only if variant found, equations 4 and 5)
+        if variant_emerge:
+            a_t = a_0 + delta_a/(1 + math.exp(-k*(t - (t_n + T_D))))
+            alpha[m, t] = a_t * gamma[m]
+            for area in A:
+                if area != m:
+                    if t - L < 0:
+                        alpha[area, t] = alpha_0[area]
+                    else:
+                        alpha[area, t] = a_0 + delta_a/(1 + math.exp(-k*(t - L - (t_n + T_D))))
+        else:
+            for area in A:
+                alpha[area, t] = alpha_0[area]
+
+        # must compute donor V and V_star before doing rest of areas
+        if realloc_flag:
+            # compute delta e (equation 7)
+            delta_E[donor, t] = min(S[donor, t], alpha[donor, t]*S[donor, t]*V_calligraphy[donor, t]/N[donor])
+            # v star (equation 8)
+            V_star[donor, t] = min(W[donor, t] - W[donor, t]*delta_E[donor, t]/S[donor, t], V[donor, t])
+
         # loop over areas
         for area in A:
-            # alpha calculated (only if variant found, equations 4 and 5)
-            if variant_emerge:
-                a_t = a_0 + delta_a/(1 + math.exp(-k*(t - (t_n + T_D))))
-                alpha[area, t]
 
             # compute delta e (equation 7)
             delta_E[area, t] = min(S[area, t], alpha[area, t]*S[area, t]*V_calligraphy[area, t]/N[area])
             # v star (equation 8)
-            V_star[area, t] = min(W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V)
+            V_star[area, t] = min(W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V[area, t])
             # compute w (equation 9)
             W[area, t + 1] = W[area, t] - W[area, t]*delta_E[area, t]/S[area, t] - V_star[area, t]
 
             # if realloc flag is true
             if realloc_flag:
                 # compute equation 13
-                for a in A[1:]: # TODO make so ignores donor, not necessarily first area
-                    if W[area, t + 1] > 0:
+                N_dot = 0
+                for a in A:
+                    if a != donor and W[area, t + 1] > 0:
                         N_dot += N[a]
-
-                # compute equation 14 (update v with equation 14)
-                V_plus[area, t]
+                            
+                if area != donor and W[area, t + 1] > 0:
+                    # compute equation 14
+                    V_plus[area, t] = V[area, t] + (N[area]/N_dot) * (V[donor, t] - V_star[donor, t])
+                else:
+                    V_plus[area, t] = V[area, t]
                 # update v star with v (equation 8)
+                V_star[area, t] = min(W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V_plus[area, t])
                 # update w with new v (equation 9)
+                W[area, t + 1] = W[area, t] - W[area, t]*delta_E[area, t]/S[area, t] - V_star[area, t]
             
             # difference equations
             S[area, t + 1] = S[area, t] - delta_E[area, t] - V_star[area, t]
@@ -98,25 +135,24 @@ def simulate():
 
         # equation 10 (check for the variant occuring, do not calculate if variant already emerged)
         if not variant_emerge:
-            cum_sum = 0
+            I_sum = 0
             # looping over area
             for area in A:
                 # looping from 0 to the current time
-                for t_star in range(0, t):
+                for t_temp in range(0, t):
                     # sum all infected up to current time
-                    cum_sum += I[area, t_star]
+                    I_sum += I[area, t_temp]
             # compare sum from above loop to person days (parameter n)
-            if cum_sum > n:
+            if I_sum > n:
                 variant_emerge = True
-                t_star_sum = 0
+                I_tot = 0
                 for area in A:
-                    t_star_sum += I[area, t]
+                    I_tot += I[area, t]
                 # if true calculate equation 11 (t_n)
-                t_n = t - 1 + (cum_sum - n)/(t_star_sum)
+                t_n = t - 1 + (I_sum - n)/(I_tot)
+    with open("outputs.log", "w") as outputs:
+        outputs.writelines("")
 
-    
-# Calculate constant from given inputs
-k = math.log((1-p)/p)/T_D     #natural log, ln()
 
 simulate()
 

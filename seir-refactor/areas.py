@@ -7,9 +7,9 @@ A = [           # The set of areas to be simulated
         "area4"
     ]
 
-D = "area1"    # The donor area
+donor = "area1"    # The donor area
 
-m = "area1"       # Variant area
+m = "area3"       # Variant area
 
 n = 1000000000  # The number of person infection days until new variant
 
