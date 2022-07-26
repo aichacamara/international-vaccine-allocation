@@ -2,8 +2,8 @@
 import time
 import math
 
-from areas_test import *
-from scenario_test import *
+from areasT1 import *
+from scenarioT1_1 import *
 from run_params import *
 
 
@@ -36,6 +36,7 @@ def simulate():
     V_plus = {(area, t): 0 for area in A for t in range(0, T)}
     N_dot = {(t): 0 for t in range(0, T)}
     r_d = {(area): r_0 + delta_r[area] for area in A}
+    t_n = -1 # Initialize t_n so it can be used in output
 
 
     # Set up initial values for the state equations
@@ -149,21 +150,64 @@ def simulate():
                     I_tot += I[area, t]
                 # if true calculate equation 11 (t_n)
                 t_n = t - 1 + (I_sum - n)/(I_tot)
+
     with open("outputs.log", "w") as outputs:
+        outputs.writelines("Simulation \n")
+        outputs.writelines("Time Horizon: " + str(T) + "\n")
+
         outputs.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
+
+        total_deaths = 0
+        for area in A:
+            total_deaths += D[area, T]
+        outputs.writelines("Total Deaths: " + str(total_deaths) + "\n")
+
+        total_vaccinations = 0
+        for area in A: 
+            for t in range(0, T):
+                total_vaccinations += V_star[area, t]
+        outputs.writelines("Total Vaccinations: " + str(total_vaccinations) + "\n")
+
         donor_vaccinations = 0
         for t in range(0, T):
             donor_vaccinations += V_star[donor, t]
         outputs.writelines("Donor Vaccinations: " + str(donor_vaccinations) + "\n")
-        total_deaths = 0
-        total_vaccinations = 0
-        for area in A: 
-            for t in range(0, T):
-                total_deaths += D[area, t]
-                total_vaccinations += V_star[area, t]
+        
+        outputs.writelines("Variant Area: " + m + "\n")
 
-        outputs.writelines("Total Deaths: " + str(total_deaths) + "\n")
-        outputs.writelines("Total Vaccinations: " + str(total_vaccinations) + "\n")
+        if t_n < 0:
+            outputs.writelines("Variant did not emerge\n")
+        else:
+            outputs.writelines("Day of Variant Emergence: " + str(t_n) + "\n")
+
+        outputs.writelines("\n")
+        
+        if verbosity >= 1:
+            outputs.writelines("Vaccination Rates by Day \n")
+            for t in range(0, T):
+                outputs.writelines("Day " + str(t) + "\n")
+                for area in A:
+                    outputs.writelines(area + " " + str(round(V_star[area, t], 4)) + " ")
+                outputs.writelines("\n")
+        outputs.writelines("\n\n")
+
+        outputs.writelines("State Variables\n\n")
+        if verbosity >= 2:
+            for area in A:
+                for t in range(0, T + 1):
+                    outputs.writelines("Area: " + area + "\n")
+                    outputs.writelines("Susceptible: " + str(S[area, t]) + "\n")
+                    outputs.writelines("Susceptible Vaccinated: " + str(S_V[area, t]) + "\n")
+                    outputs.writelines("Exposed: " + str(E[area, t]) + "\n")
+                    outputs.writelines("Exposed Vaccinated: " + str(E_V[area, t]) + "\n")
+                    outputs.writelines("Infected: " + str(I[area, t]) + "\n")
+                    outputs.writelines("Infected Vaccinated: " + str(I_V[area, t]) + "\n")
+                    outputs.writelines("Recovered: " + str(R[area, t]) + "\n")
+                    outputs.writelines("Hospitalized: " + str(H[area, t]) + "\n")
+                    outputs.writelines("Dead: " + str(D[area, t]) + "\n")
+                    outputs.writelines("\n")
+
+
 
 
 

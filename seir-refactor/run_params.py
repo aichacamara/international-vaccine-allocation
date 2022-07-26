@@ -1,6 +1,6 @@
 # Run parameters for seir_opt script
 
-verbosity = 0
+verbosity = 2
 simulate_only = True
 realloc_flag = False
 # non_donor_deaths = 
