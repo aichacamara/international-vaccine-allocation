@@ -1,10 +1,12 @@
 # import numpy as np
-import time
+# import time
+from io import TextIOWrapper
 import math
+
 
 from areasT1 import *
 from scenarioT1_1 import *
-from run_params import *
+from paramsT1 import *
 
 
 # Calculate constant from given inputs
@@ -48,8 +50,6 @@ def simulate():
         S_V[area, 0] = rho_V[area]*N[area] - E_V[area, 0] - I_V[area, 0]
         S[area, 0] = N[area] - E[area, 0] - E_V[area, 0] - I[area, 0] - I_V[area, 0] - S_V[area, 0]
         W[area, 0] = rho[area]*N[area] - S_V[area, 0] - E_V[area, 0] - I_V[area, 0] - rho[area]*E[area, 0] - rho[area]*I[area, 0]
-        V_calligraphy[area, 0] = I[area, 0] + p_e*I_V[area, 0]
-        alpha[area, 0] = alpha_0[area]  # Initialize alpha in relation to time
 
 
     if len(b) == 0:
@@ -89,6 +89,8 @@ def simulate():
 
         # must compute donor V and V_star before doing rest of areas
         if realloc_flag:
+            # compute V calligraphy in order to use the donor delta e before inner for loop
+            V_calligraphy[donor, t] = I[donor, t] + p_e*I_V[donor, t]
             # compute delta e (equation 7)
             delta_E[donor, t] = min(S[donor, t], alpha[donor, t]*S[donor, t]*V_calligraphy[donor, t]/N[donor])
             # v star (equation 8)
@@ -101,13 +103,24 @@ def simulate():
 
         # loop over areas
         for area in A:
-
+            # compute v calligraphy
+            V_calligraphy[area, t] = I[area, t] + p_e*I_V[area, t]
             # compute delta e (equation 7)
             delta_E[area, t] = min(S[area, t], alpha[area, t]*S[area, t]*V_calligraphy[area, t]/N[area])
-            # v star (equation 8)
-            V_star[area, t] = min(W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V[area, t])
-            # compute w (equation 9)
-            W[area, t + 1] = W[area, t] - W[area, t]*delta_E[area, t]/S[area, t] - V_star[area, t]
+            
+            if S[area, t] < 0.0001:
+                # v star (equation 8)
+                V_star[area, t] = min(W[area, t], V[area, t])
+                # compute w (equation 9)
+                W[area, t + 1] = W[area, t] - V_star[area, t]
+            else:
+                # v star (equation 8)
+                V_star[area, t] = min(W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V[area, t])
+                # compute w (equation 9
+                W[area, t + 1] = W[area, t] - W[area, t]*delta_E[area, t]/S[area, t] - V_star[area, t]
+            
+            
+            
 
             # if realloc flag is true
             if realloc_flag:    
@@ -123,9 +136,9 @@ def simulate():
             
             # difference equations
             S[area, t + 1] = S[area, t] - delta_E[area, t] - V_star[area, t]
-            S_V[area, t + 1] = S_V[area, t] + V_star[area, t] - p_r*alpha[area, t]
-            E[area, t + 1] = E[area, t] + delta_E[area, t] + r_I*E[area, t]
-            E_V[area, t + 1] = E_V[area, t] + p_r*alpha[area, t] - r_I*E_V[area, t]
+            S_V[area, t + 1] = S_V[area, t] + V_star[area, t] - p_r*alpha[area, t]*(S_V[area, t]/N[area])*V_calligraphy[area, t]
+            E[area, t + 1] = E[area, t] + delta_E[area, t] - r_I*E[area, t]
+            E_V[area, t + 1] = E_V[area, t] + p_r*alpha[area, t]*(S_V[area, t]/N[area])*V_calligraphy[area, t] - r_I*E_V[area, t]
             I[area, t + 1] = I[area, t] + r_I*E[area, t] - r_d[area]*I[area, t]
             I_V[area, t + 1] = I_V[area, t] + r_I*E_V[area, t] - r_d[area]*I_V[area, t]
             H[area, t + 1] = H[area, t] + r_d[area]*p_H*I[area, t] + r_d[area]*p_V_H*I_V[area, t] - r_R*H[area, t]
@@ -151,63 +164,116 @@ def simulate():
                 # if true calculate equation 11 (t_n)
                 t_n = t - 1 + (I_sum - n)/(I_tot)
 
-    with open("outputs.log", "w") as outputs:
-        outputs.writelines("Simulation \n")
-        outputs.writelines("Time Horizon: " + str(T) + "\n")
+    with open("output.log", "w") as output_file:
+        output_file.writelines("Simulation \n")
+        output_file.writelines("Time Horizon: " + str(T) + "\n")
 
-        outputs.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
+        output_file.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
 
         total_deaths = 0
         for area in A:
             total_deaths += D[area, T]
-        outputs.writelines("Total Deaths: " + str(total_deaths) + "\n")
+        output_file.writelines("Total Deaths: " + str(total_deaths) + "\n")
 
         total_vaccinations = 0
         for area in A: 
             for t in range(0, T):
                 total_vaccinations += V_star[area, t]
-        outputs.writelines("Total Vaccinations: " + str(total_vaccinations) + "\n")
+        output_file.writelines("Total Vaccinations: " + str(total_vaccinations) + "\n")
 
         donor_vaccinations = 0
         for t in range(0, T):
             donor_vaccinations += V_star[donor, t]
-        outputs.writelines("Donor Vaccinations: " + str(donor_vaccinations) + "\n")
+        output_file.writelines("Donor Vaccinations: " + str(donor_vaccinations) + "\n")
         
-        outputs.writelines("Variant Area: " + m + "\n")
+        output_file.writelines("Variant Area: " + m + "\n")
 
         if t_n < 0:
-            outputs.writelines("Variant did not emerge\n")
+            output_file.writelines("Variant did not emerge\n")
         else:
-            outputs.writelines("Day of Variant Emergence: " + str(t_n) + "\n")
+            output_file.writelines("Day of Variant Emergence: " + str(t_n) + "\n")
 
-        outputs.writelines("\n")
+        output_file.writelines("\n")
         
         if verbosity >= 1:
-            outputs.writelines("Vaccination Rates by Day \n")
+            output_file.writelines("Vaccination Rates by Day \n")
             for t in range(0, T):
-                outputs.writelines("Day " + str(t) + "\n")
+                output_file.writelines("    Day " + str(t) + "\n")
                 for area in A:
-                    outputs.writelines(area + " " + str(round(V_star[area, t], 4)) + " ")
-                outputs.writelines("\n")
-        outputs.writelines("\n\n")
+                    output_file.writelines("        " + area + " " + str(round(V_star[area, t], 4)) + "\n")
+                output_file.writelines("\n")
+        output_file.writelines("\n\n")
 
-        outputs.writelines("State Variables\n\n")
+
         if verbosity >= 2:
+            output_file.writelines("State Variables\n\n")
+            lower_limit = T - 1
+        
+            if verbosity >= 3:
+                lower_limit = 0
+
+            population_max = 0
             for area in A:
-                for t in range(0, T + 1):
-                    outputs.writelines("Area: " + area + "\n")
-                    outputs.writelines("Susceptible: " + str(S[area, t]) + "\n")
-                    outputs.writelines("Susceptible Vaccinated: " + str(S_V[area, t]) + "\n")
-                    outputs.writelines("Exposed: " + str(E[area, t]) + "\n")
-                    outputs.writelines("Exposed Vaccinated: " + str(E_V[area, t]) + "\n")
-                    outputs.writelines("Infected: " + str(I[area, t]) + "\n")
-                    outputs.writelines("Infected Vaccinated: " + str(I_V[area, t]) + "\n")
-                    outputs.writelines("Recovered: " + str(R[area, t]) + "\n")
-                    outputs.writelines("Hospitalized: " + str(H[area, t]) + "\n")
-                    outputs.writelines("Dead: " + str(D[area, t]) + "\n")
-                    outputs.writelines("\n")
+                if N[area] > population_max:
+                    population_max = N[area]
+            num_length = max(len(str(population_max)) + 4, 7)
+
+            output_state_equations(output_file, num_length, lower_limit, T, "Alpha", alpha)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Susceptible", S)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Susceptible Vaccinated", S_V)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Exposed", E)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Exposed Vaccinated", E_V)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Infected", I)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Infected Vaccinated", I_V)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Recovered", R)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Hospitalized", H)
+            output_file.writelines("\n")
+            output_state_equations(output_file, num_length, lower_limit + 1, T + 1, "Dead", D)
+            output_file.writelines("\n")
 
 
+            # total_people = S[area, t] + S_V[area, t] + E[area, t] + E_V[area, t] + I[area, t] + I_V[area, t] + R[area, t] + H[area, t] + D[area, t]
+            # outputs.writelines("            Total people on this day: " + str(total_people) + "\n")
+            # outputs.writelines("\n")
+
+def output_state_equations(output_file: TextIOWrapper, 
+                            num_length: int, 
+                            lower_limit: int, 
+                            upper_limit: int, 
+                            state_name: str, 
+                            state: dict):
+    """
+    Helper function to generate file output listing state values over area and time in a formatted way
+
+    Params:
+        output_file: the file to have the output written to
+        num_length: the length of the spacing numbers are centered inside of
+        lower_limit: the lower limit of the time bounds
+        upper_limit: the upper limit of the time bounds
+        state_name: the name of the outputted state values
+        state: the object containing the values for area and time
+    
+    Returns:
+        None
+    """
+    output_file.writelines(state_name + "\n")
+    output_file.writelines(f'{"day": ^{num_length}}')
+    for area in A:
+        output_file.writelines(f'{area: ^{num_length}}')
+    output_file.writelines("\n")
+    for t in range(lower_limit, upper_limit):
+        output_file.writelines(f'{t: ^{num_length}}')
+        for area in A:
+            output_file.writelines(f'{round(state[area, t], 2): ^{num_length}}')
+        output_file.writelines("\n")
 
 
 

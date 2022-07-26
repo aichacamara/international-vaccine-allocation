@@ -1,0 +1,774 @@
+Simulation 
+Time Horizon: 180
+Donor Deaths: 9.83201840422107
+Total Deaths: 893.5353467875882
+Total Vaccinations: 98729.15896270504
+Donor Vaccinations: 49705.19026673694
+Variant Area: area2
+Day of Variant Emergence: 41.922957193321615
+
+Vaccination Rates by Day 
+    Day 0
+        area1 1312.5
+        area2 437.5
+
+    Day 1
+        area1 1312.5
+        area2 437.5
+
+    Day 2
+        area1 1312.5
+        area2 437.5
+
+    Day 3
+        area1 1312.5
+        area2 437.5
+
+    Day 4
+        area1 1312.5
+        area2 437.5
+
+    Day 5
+        area1 1312.5
+        area2 437.5
+
+    Day 6
+        area1 1312.5
+        area2 437.5
+
+    Day 7
+        area1 1312.5
+        area2 437.5
+
+    Day 8
+        area1 1312.5
+        area2 437.5
+
+    Day 9
+        area1 1312.5
+        area2 437.5
+
+    Day 10
+        area1 1312.5
+        area2 437.5
+
+    Day 11
+        area1 1312.5
+        area2 437.5
+
+    Day 12
+        area1 1312.5
+        area2 437.5
+
+    Day 13
+        area1 1312.5
+        area2 437.5
+
+    Day 14
+        area1 1312.5
+        area2 437.5
+
+    Day 15
+        area1 1312.5
+        area2 437.5
+
+    Day 16
+        area1 1312.5
+        area2 437.5
+
+    Day 17
+        area1 1312.5
+        area2 437.5
+
+    Day 18
+        area1 1312.5
+        area2 437.5
+
+    Day 19
+        area1 1312.5
+        area2 437.5
+
+    Day 20
+        area1 1312.5
+        area2 437.5
+
+    Day 21
+        area1 1312.5
+        area2 437.5
+
+    Day 22
+        area1 1312.5
+        area2 437.5
+
+    Day 23
+        area1 1312.5
+        area2 437.5
+
+    Day 24
+        area1 1312.5
+        area2 437.5
+
+    Day 25
+        area1 1312.5
+        area2 437.5
+
+    Day 26
+        area1 1312.5
+        area2 437.5
+
+    Day 27
+        area1 1312.5
+        area2 437.5
+
+    Day 28
+        area1 1312.5
+        area2 437.5
+
+    Day 29
+        area1 1312.5
+        area2 437.5
+
+    Day 30
+        area1 1312.5
+        area2 437.5
+
+    Day 31
+        area1 1312.5
+        area2 437.5
+
+    Day 32
+        area1 1312.5
+        area2 437.5
+
+    Day 33
+        area1 1312.5
+        area2 437.5
+
+    Day 34
+        area1 1312.5
+        area2 437.5
+
+    Day 35
+        area1 1312.5
+        area2 437.5
+
+    Day 36
+        area1 1312.5
+        area2 437.5
+
+    Day 37
+        area1 1142.6903
+        area2 437.5
+
+    Day 38
+        area1 0.0
+        area2 437.5
+
+    Day 39
+        area1 0.0
+        area2 437.5
+
+    Day 40
+        area1 0.0
+        area2 437.5
+
+    Day 41
+        area1 0.0
+        area2 437.5
+
+    Day 42
+        area1 0.0
+        area2 437.5
+
+    Day 43
+        area1 0.0
+        area2 437.5
+
+    Day 44
+        area1 0.0
+        area2 437.5
+
+    Day 45
+        area1 0.0
+        area2 437.5
+
+    Day 46
+        area1 0.0
+        area2 437.5
+
+    Day 47
+        area1 0.0
+        area2 437.5
+
+    Day 48
+        area1 0.0
+        area2 437.5
+
+    Day 49
+        area1 0.0
+        area2 437.5
+
+    Day 50
+        area1 0.0
+        area2 437.5
+
+    Day 51
+        area1 0.0
+        area2 437.5
+
+    Day 52
+        area1 0.0
+        area2 437.5
+
+    Day 53
+        area1 0.0
+        area2 437.5
+
+    Day 54
+        area1 0.0
+        area2 437.5
+
+    Day 55
+        area1 0.0
+        area2 437.5
+
+    Day 56
+        area1 0.0
+        area2 437.5
+
+    Day 57
+        area1 0.0
+        area2 437.5
+
+    Day 58
+        area1 0.0
+        area2 437.5
+
+    Day 59
+        area1 0.0
+        area2 437.5
+
+    Day 60
+        area1 0.0
+        area2 437.5
+
+    Day 61
+        area1 0.0
+        area2 437.5
+
+    Day 62
+        area1 0.0
+        area2 437.5
+
+    Day 63
+        area1 0.0
+        area2 437.5
+
+    Day 64
+        area1 0.0
+        area2 437.5
+
+    Day 65
+        area1 0.0
+        area2 437.5
+
+    Day 66
+        area1 0.0
+        area2 437.5
+
+    Day 67
+        area1 0.0
+        area2 437.5
+
+    Day 68
+        area1 0.0
+        area2 437.5
+
+    Day 69
+        area1 0.0
+        area2 437.5
+
+    Day 70
+        area1 0.0
+        area2 437.5
+
+    Day 71
+        area1 0.0
+        area2 437.5
+
+    Day 72
+        area1 0.0
+        area2 437.5
+
+    Day 73
+        area1 0.0
+        area2 437.5
+
+    Day 74
+        area1 0.0
+        area2 437.5
+
+    Day 75
+        area1 0.0
+        area2 437.5
+
+    Day 76
+        area1 0.0
+        area2 437.5
+
+    Day 77
+        area1 0.0
+        area2 437.5
+
+    Day 78
+        area1 0.0
+        area2 437.5
+
+    Day 79
+        area1 0.0
+        area2 437.5
+
+    Day 80
+        area1 0.0
+        area2 437.5
+
+    Day 81
+        area1 0.0
+        area2 437.5
+
+    Day 82
+        area1 0.0
+        area2 437.5
+
+    Day 83
+        area1 0.0
+        area2 437.5
+
+    Day 84
+        area1 0.0
+        area2 437.5
+
+    Day 85
+        area1 0.0
+        area2 437.5
+
+    Day 86
+        area1 0.0
+        area2 437.5
+
+    Day 87
+        area1 0.0
+        area2 437.5
+
+    Day 88
+        area1 0.0
+        area2 437.5
+
+    Day 89
+        area1 0.0
+        area2 437.5
+
+    Day 90
+        area1 0.0
+        area2 437.5
+
+    Day 91
+        area1 0.0
+        area2 437.5
+
+    Day 92
+        area1 0.0
+        area2 437.5
+
+    Day 93
+        area1 0.0
+        area2 437.5
+
+    Day 94
+        area1 0.0
+        area2 437.5
+
+    Day 95
+        area1 0.0
+        area2 437.5
+
+    Day 96
+        area1 0.0
+        area2 437.5
+
+    Day 97
+        area1 0.0
+        area2 437.5
+
+    Day 98
+        area1 0.0
+        area2 437.5
+
+    Day 99
+        area1 0.0
+        area2 437.5
+
+    Day 100
+        area1 0.0
+        area2 437.5
+
+    Day 101
+        area1 0.0
+        area2 437.5
+
+    Day 102
+        area1 0.0
+        area2 437.5
+
+    Day 103
+        area1 0.0
+        area2 437.5
+
+    Day 104
+        area1 0.0
+        area2 437.5
+
+    Day 105
+        area1 0.0
+        area2 437.5
+
+    Day 106
+        area1 0.0
+        area2 437.5
+
+    Day 107
+        area1 0.0
+        area2 437.5
+
+    Day 108
+        area1 0.0
+        area2 437.5
+
+    Day 109
+        area1 0.0
+        area2 437.5
+
+    Day 110
+        area1 0.0
+        area2 437.5
+
+    Day 111
+        area1 0.0
+        area2 437.5
+
+    Day 112
+        area1 0.0
+        area2 23.9687
+
+    Day 113
+        area1 0.0
+        area2 0.0
+
+    Day 114
+        area1 0.0
+        area2 0.0
+
+    Day 115
+        area1 0.0
+        area2 0.0
+
+    Day 116
+        area1 0.0
+        area2 0.0
+
+    Day 117
+        area1 0.0
+        area2 0.0
+
+    Day 118
+        area1 0.0
+        area2 0.0
+
+    Day 119
+        area1 0.0
+        area2 0.0
+
+    Day 120
+        area1 0.0
+        area2 0.0
+
+    Day 121
+        area1 0.0
+        area2 0.0
+
+    Day 122
+        area1 0.0
+        area2 0.0
+
+    Day 123
+        area1 0.0
+        area2 0.0
+
+    Day 124
+        area1 0.0
+        area2 0.0
+
+    Day 125
+        area1 0.0
+        area2 0.0
+
+    Day 126
+        area1 0.0
+        area2 0.0
+
+    Day 127
+        area1 0.0
+        area2 0.0
+
+    Day 128
+        area1 0.0
+        area2 0.0
+
+    Day 129
+        area1 0.0
+        area2 0.0
+
+    Day 130
+        area1 0.0
+        area2 0.0
+
+    Day 131
+        area1 0.0
+        area2 0.0
+
+    Day 132
+        area1 0.0
+        area2 0.0
+
+    Day 133
+        area1 0.0
+        area2 0.0
+
+    Day 134
+        area1 0.0
+        area2 0.0
+
+    Day 135
+        area1 0.0
+        area2 0.0
+
+    Day 136
+        area1 0.0
+        area2 0.0
+
+    Day 137
+        area1 0.0
+        area2 0.0
+
+    Day 138
+        area1 0.0
+        area2 0.0
+
+    Day 139
+        area1 0.0
+        area2 0.0
+
+    Day 140
+        area1 0.0
+        area2 0.0
+
+    Day 141
+        area1 0.0
+        area2 0.0
+
+    Day 142
+        area1 0.0
+        area2 0.0
+
+    Day 143
+        area1 0.0
+        area2 0.0
+
+    Day 144
+        area1 0.0
+        area2 0.0
+
+    Day 145
+        area1 0.0
+        area2 0.0
+
+    Day 146
+        area1 0.0
+        area2 0.0
+
+    Day 147
+        area1 0.0
+        area2 0.0
+
+    Day 148
+        area1 0.0
+        area2 0.0
+
+    Day 149
+        area1 0.0
+        area2 0.0
+
+    Day 150
+        area1 0.0
+        area2 0.0
+
+    Day 151
+        area1 0.0
+        area2 0.0
+
+    Day 152
+        area1 0.0
+        area2 0.0
+
+    Day 153
+        area1 0.0
+        area2 0.0
+
+    Day 154
+        area1 0.0
+        area2 0.0
+
+    Day 155
+        area1 0.0
+        area2 0.0
+
+    Day 156
+        area1 0.0
+        area2 0.0
+
+    Day 157
+        area1 0.0
+        area2 0.0
+
+    Day 158
+        area1 0.0
+        area2 0.0
+
+    Day 159
+        area1 0.0
+        area2 0.0
+
+    Day 160
+        area1 0.0
+        area2 0.0
+
+    Day 161
+        area1 0.0
+        area2 0.0
+
+    Day 162
+        area1 0.0
+        area2 0.0
+
+    Day 163
+        area1 0.0
+        area2 0.0
+
+    Day 164
+        area1 0.0
+        area2 0.0
+
+    Day 165
+        area1 0.0
+        area2 0.0
+
+    Day 166
+        area1 0.0
+        area2 0.0
+
+    Day 167
+        area1 0.0
+        area2 0.0
+
+    Day 168
+        area1 0.0
+        area2 0.0
+
+    Day 169
+        area1 0.0
+        area2 0.0
+
+    Day 170
+        area1 0.0
+        area2 0.0
+
+    Day 171
+        area1 0.0
+        area2 0.0
+
+    Day 172
+        area1 0.0
+        area2 0.0
+
+    Day 173
+        area1 0.0
+        area2 0.0
+
+    Day 174
+        area1 0.0
+        area2 0.0
+
+    Day 175
+        area1 0.0
+        area2 0.0
+
+    Day 176
+        area1 0.0
+        area2 0.0
+
+    Day 177
+        area1 0.0
+        area2 0.0
+
+    Day 178
+        area1 0.0
+        area2 0.0
+
+    Day 179
+        area1 0.0
+        area2 0.0
+
+
+
+State Variables
+
+Alpha
+   day      area1     area2   
+   179       1.2       1.2    
+
+Susceptible
+   day      area1     area2   
+   180       0.0       0.0    
+
+Susceptible Vaccinated
+   day      area1     area2   
+   180     96124.74  25906.44 
+
+Exposed
+   day      area1     area2   
+   180       0.0       0.0    
+
+Exposed Vaccinated
+   day      area1     area2   
+   180      525.76     5.32   
+
+Infected
+   day      area1     area2   
+   180       0.0       0.0    
+
+Infected Vaccinated
+   day      area1     area2   
+   180      314.37     5.36   
+
+Recovered
+   day      area1     area2   
+   180     3009.86   73178.85 
+
+Hospitalized
+   day      area1     area2   
+   180      15.45     20.31   
+
+Dead
+   day      area1     area2   
+   180       9.83     883.7   
+

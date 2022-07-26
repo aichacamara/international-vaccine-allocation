@@ -14,6 +14,6 @@ p_r = 0.6       # Infection rate for a vaccinated person (proportion of unvaccin
 L = 20          # Lag parameter in days for the time a variant takes to reach other area
 T_D = 45        # Time for variant to dominate area
 p = 0.01        # proportion of people in infected state that have new variant when introduced
-T = 1           # Time horizon
+T = 180         # Time horizon
 B_0 = 1750      # Vaccine available day 1
-b = []          # Vaccine availability as a proportion of day 0, by day = 0,...,T-1. Default = 1
+b = [] #Vaccine availability as a proportion of day 0, by day = 0,...,T-1. Default = 1
