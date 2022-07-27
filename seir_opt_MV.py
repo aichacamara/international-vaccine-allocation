@@ -83,7 +83,7 @@ def optimize_inner():
         V = {(a,t): V1.x[a,t] for a in areas for t in range(T)}  # Update V using optimal V1 from LP
         simulate()                                             
         eps = beta*eps
-    z[i] = D1[donor,T]   #Donor deaths from LP solution
+    z[i] = D1[donor,T].x   #Donor deaths from LP solution
                         #Could move outside of this function.
 
 # Create object that formulates and solves LP

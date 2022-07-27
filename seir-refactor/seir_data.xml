@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<data>
+  <area_data>
+    <area name="area1">
+      <N>100000</N>
+      <rho_V>0.5</rho_V>
+      <rho_I_N>10</rho_I_N>
+      <delta_r>0</delta_r>
+      <gamma>1</gamma>
+      <rho>1</rho>
+    </area>
+
+    <area name="area2">
+      <N>100000</N>
+      <rho_V>0.1</rho_V>
+      <rho_I_N>10</rho_I_N>
+      <delta_r>0</delta_r>
+      <gamma>1</gamma>
+      <rho>1</rho>
+    </area>
+
+    <donor>area1</donor>
+    <m>area2</m>
+    <n>10000</n>
+  </area_data>
+
+  <scenario_data>
+    <r_I>0.2</r_I>
+    <r_0>0.286</r_0>
+    <r_R>0.0667</r_R>
+    <p_V_H>0.0296</p_V_H>
+    <p_H>0.296</p_H>
+    <p_D>0.1</p_D>
+    <a_0>0.6</a_0>
+    <delta_a>0.6</delta_a>
+    <p_e>0.6</p_e>
+    <p_r>0.6</p_r>
+    <L>20</L>
+    <T_D>45</T_D>
+    <p>0.01</p>
+    <T>180</T>
+    <B_0>1750</B_0>
+    <b></b>
+    <!-- to add b here, just seperate the numbers by commas -->
+  </scenario_data>
+  <params>
+    <verbosity>3</verbosity>
+    <simulate_only>1</simulate_only>
+    <realloc_flag>0</realloc_flag>
+    <non_donor_deaths>0</non_donor_deaths>
+    <p_k>0.75</p_k>
+    <lambda_0>1</lambda_0>
+    <phi>2</phi>
+    <epsilon_0>100</epsilon_0>
+    <delta_I>100</delta_I>
+    <delta>0.1</delta>
+    <beta>0.9</beta>
+    <iter_lmt>20</iter_lmt>
+    <iter_lmt_search>10</iter_lmt_search>
+  </params>
+</data>
