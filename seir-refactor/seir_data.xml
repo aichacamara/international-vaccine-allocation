@@ -2,61 +2,68 @@
 
 <data>
   <area_data>
+
+    <!-- One of the areas to run the model on -->
     <area name="area1">
-      <N>100000</N>
-      <rho_V>0.5</rho_V>
-      <rho_I_N>10</rho_I_N>
-      <delta_r>0</delta_r>
-      <gamma>1</gamma>
-      <rho>1</rho>
+      <N>100000</N> <!-- Population -->
+      <rho_V>0.5</rho_V> <!-- Vaccination Rate -->
+      <rho_I_N>10</rho_I_N> <!-- Initial cases per day = rho_I * N -->
+      <delta_r>0</delta_r> <!-- Testing effect on rate out of I -->
+      <gamma>1</gamma> <!-- Behavior infection multiplier -->
+      <rho>1</rho> <!-- Proportion willing to be vaccinated -->
     </area>
 
+    <!-- One of the areas to run the model on -->
     <area name="area2">
-      <N>100000</N>
-      <rho_V>0.1</rho_V>
-      <rho_I_N>10</rho_I_N>
-      <delta_r>0</delta_r>
-      <gamma>1</gamma>
-      <rho>1</rho>
+      <N>100000</N> <!-- Population -->
+      <rho_V>0.1</rho_V> <!-- Vaccination Rate -->
+      <rho_I_N>10</rho_I_N> <!-- Initial cases per day = rho_I * N -->
+      <delta_r>0</delta_r> <!-- Testing effect on rate out of I -->
+      <gamma>1</gamma> <!-- Behavior infection multiplier -->
+      <rho>1</rho> <!-- Proportion willing to be vaccinated -->
     </area>
 
-    <donor>area1</donor>
-    <m>area2</m>
-    <n>10000</n>
+    <donor>area1</donor> <!-- Donor area ### D -> donor -->
+    <m>area2</m> <!-- Variant area -->
+    <n>10000</n> <!-- person infection-days until new variant -->
   </area_data>
 
   <scenario_data>
-    <r_I>0.2</r_I>
-    <r_0>0.286</r_0>
-    <r_R>0.0667</r_R>
-    <p_V_H>0.0296</p_V_H>
-    <p_H>0.296</p_H>
-    <p_D>0.1</p_D>
-    <a_0>0.6</a_0>
-    <delta_a>0.6</delta_a>
-    <p_e>0.6</p_e>
-    <p_r>0.6</p_r>
-    <L>20</L>
-    <T_D>45</T_D>
-    <p>0.01</p>
-    <T>180</T>
-    <B_0>1750</B_0>
-    <b></b>
-    <!-- to add b here, just seperate the numbers by commas -->
+    <r_I>0.2</r_I> <!-- rate out of exposed (E) state into infectious (I) state -->
+    <r_0>0.286</r_0> <!-- rate out of infectious state without testing -->
+    <r_R>0.0667</r_R> <!-- rate out of state hospitalized (H) into recovery or death -->
+    <p_V_H>0.0296</p_V_H> <!-- P(Hospitalized | Infected and Vaxxed) -->
+    <p_H>0.296</p_H> <!-- P(Hospitalized | Infected) -->
+    <p_D>0.1</p_D> <!-- P(Dead | Hospitalized) -->
+    <a_0>0.6</a_0> <!-- Initial infection rate (proportion/day) -->
+    <delta_a>0.6</delta_a> <!-- Change in infection rate for a new variant (proportion/day) -->
+    <p_e>0.6</p_e> <!-- Transmission rate from a vaccinated person (proportion of unvaccinated rate) -->
+    <p_r>0.6</p_r> <!-- Infection rate for a vaccinated person (proportion of unvaccinated rate) -->
+    <L>20</L> <!-- Lag parameter in days for the time a variant takes to reach other area -->
+    <T_D>45</T_D> <!-- Time for variant to dominate area -->
+    <p>0.01</p> <!-- proportion of people in infected state that have new variant when introduced -->
+    <T>180</T> <!-- Time horizon -->
+    <B_0>1750</B_0> <!-- Vaccine available day 1 -->
+    <b></b> <!-- Vaccine availability as a proportion of day 0, by day = 0,...,T-1. Default = 1 -->
+    <!-- 
+      to add b here, just seperate the numbers by commas
+      ex. <b>1,1,1,1,1</b>
+    -->
   </scenario_data>
+
   <params>
-    <verbosity>3</verbosity>
-    <simulate_only>1</simulate_only>
-    <realloc_flag>0</realloc_flag>
-    <non_donor_deaths>0</non_donor_deaths>
-    <p_k>0.75</p_k>
-    <lambda_0>1</lambda_0>
-    <phi>2</phi>
-    <epsilon_0>100</epsilon_0>
-    <delta_I>100</delta_I>
-    <delta>0.1</delta>
-    <beta>0.9</beta>
-    <iter_lmt>20</iter_lmt>
-    <iter_lmt_search>10</iter_lmt_search>
+    <verbosity>3</verbosity> <!-- 0 least verbose output ... 3 most verbose -->
+    <simulate_only>1</simulate_only> <!-- If 1, only do simulate-->
+    <realloc_flag>0</realloc_flag> <!-- proportional reallocation of unused vacc to non-donors in sim -->
+    <non_donor_deaths>0</non_donor_deaths> <!-- include non-donor deaths in objective  -->
+    <p_k>0.75</p_k> <!-- maximum proportion of available vacc used in donor area -->
+    <lambda_0>1</lambda_0> <!-- initial Lagrange multiplier for infection -->
+    <phi>2</phi> <!-- exploration multiplier for lambda -->
+    <epsilon_0>100</epsilon_0> <!-- exploration tolerance for I -->
+    <delta_I>100</delta_I> <!-- termination tolerance for I -->
+    <delta>0.1</delta> <!-- termination tolerance for lambda -->
+    <beta>0.9</beta> <!-- convergence parameter -->
+    <iter_lmt>20</iter_lmt> <!-- iteration limit for I -->
+    <iter_lmt_search>10</iter_lmt_search> <!-- iteration limit for lambda -->
   </params>
 </data>
