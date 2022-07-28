@@ -83,7 +83,7 @@ def optimize_inner():
         V = {(a,t): V1.x[a,t] for a in areas for t in range(T)}  # Update V using optimal V1 from LP
         simulate()                                             
         eps = beta*eps
-    z[i] = D1[donor,T].x   #Donor deaths from LP solution
+    z[i] = D1[donor,T].x   # Donor deaths from LP solution
                         #Could move outside of this function.
 
 # Create object that formulates and solves LP
@@ -177,7 +177,7 @@ def formulate_LP()
     v.addConstrs((IV1[a,t] - IV[a,t] <= eps for a in areas for t in range(1,T+1)), "IV upper bd")
     v.addConstrs((IV1[a,t] - IV[a,t] >= -eps for a in areas for t in range(1,T+1)), "IV lower bd")
 
- def solve_LP()          
+def solve_LP():    
     # key inputs: I, IV, tn, m, lambda[i], eps
     # key outputs:  V[a,t] (actual vacc), zLP[j] (optimal objective value)
 

@@ -4,3 +4,4 @@ input.txt
 __pycache__
 *.lp
 .DS_Store
+output.log
