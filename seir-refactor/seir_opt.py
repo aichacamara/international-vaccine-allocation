@@ -1,6 +1,5 @@
 # Type imports
 from io import TextIOWrapper
-from termios import VT1
 
 # Packages
 import numpy as np
@@ -77,16 +76,18 @@ def main(xml_path: str):
 
     formulate_LP(l[1], t_n, alpha, V_calligraphy, r_d, S, S_V,
                  E, E_V, I, I_V, W, H, D, R, epsilon_0, B)
+    v.write("formulate.lp")
 
     # Iterations 1 and 2
     i = 1
-    z[i] = optimize_inner(l[i], t_n, alpha, V_calligraphy,
-                          S, S_V, E, E_V, I, I_V, W)
+    z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                S, S_V, E, E_V, I, I_V, W)
     fL = z[i]  # f at left end pt
 
-    # i = 2
-    # optimize_inner()
-    # fR = z[i]           #f at right end pt
+    i = 2
+    z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                S, S_V, E, E_V, I, I_V, W)
+    fR = z[i]  # f at right end pt
 
 
 def optimize_inner(l, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W):
@@ -102,12 +103,13 @@ def optimize_inner(l, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W):
         j = j + 1
         zLP[j] = solve_LP(l, j, t_n, alpha, V_calligraphy,
                           S, S_V, E, E_V, I, I_V, W, eps)
+        v.write("lamda-" + str(l) + "solve" + str(j) + ".lp")
         # Update V using optimal V1 from LP
         V = {(a, t): V1[a, t].x for a in A for t in range(0, T)}
         t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R = simulate(
             S, S_V, E, E_V, I, I_V, W, V)
         eps = beta*eps
-    return D1[donor, T].x
+    return D1[donor, T].x, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W
 
 
 def formulate_LP(l, t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R, eps, B):
@@ -146,12 +148,12 @@ def formulate_LP(l, t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H
 
     # constraint must be in () if name argument used
     v.addConstrs((V1[donor, t] <= p_k*B[t]
-                 for t in range(T)), "Policy: donor limit")
-    v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T)), "Vaccine budget")
+                 for t in range(T)), "Policy_donor_limit")
+    v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T)), "Vaccine_budget")
 
     # Dynamics for start time t=1 to T-1
     v.addConstrs((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_calligraphy[a, t]/N[a]*W1[a, t] - V1[a, t]
-                  for a in A for t in range(1, T)), "Vaccine willingness")
+                  for a in A for t in range(1, T)), "Vaccine_willingness")
     v.addConstrs((S1[a, t+1] == S1[a, t] - alpha[a, t]*V_calligraphy[a, t]/N[a]*S1[a, t] - V1[a, t]
                   for a in A for t in range(1, T)), "S")
     v.addConstrs((SV1[a, t+1] == SV1[a, t] - p_r*alpha[a, t]*V_calligraphy[a, t]/N[a]*SV1[a, t] + V1[a, t]
@@ -173,41 +175,41 @@ def formulate_LP(l, t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H
 
     # Dynamics for start time t=0. Use constant W[a,0} etc. (but variable V1). Use same constraint names??
     v.addConstrs((W1[a, 1] == W[a, 0] - alpha[a, 0]*V_calligraphy[a, 0]/N[a]*W[a, 0] - V1[a, 0]
-                  for a in A), "Vaccine willingness t=0")
+                  for a in A), "Vaccine_willingness_t=0")
     v.addConstrs((S1[a, 1] == S[a, 0] - alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S[a, 0] - V1[a, 0]
-                  for a in A), "S t=0")
+                  for a in A), "S_t=0")
     v.addConstrs((SV1[a, 1] == S_V[a, 0] - p_r*alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S_V[a, 0] + V1[a, 0]
-                  for a in A), "SV t=0")
+                  for a in A), "SV_t=0")
     v.addConstrs((E1[a, 1] == E[a, 0] + alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S[a, 0] - r_I*E[a, 0]
-                  for a in A), "E t=0")
+                  for a in A), "E_t=0")
     v.addConstrs((EV1[a, 1] == E_V[a, 0] + p_r*alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S_V[a, 0] - r_I*E_V[a, 0]
-                  for a in A), "EV t=0")
+                  for a in A), "EV_t=0")
     v.addConstrs((I1[a, 1] == I[a, 0] + r_I*E[a, 0] - r_d[a]*I[a, 0]
-                  for a in A), "I t=0")
+                  for a in A), "I_t=0")
     v.addConstrs((IV1[a, 1] == I_V[a, 0] + r_I*E_V[a, 0] - r_d[a]*I_V[a, 0]
-                  for a in A), "IV t=0")
+                  for a in A), "IV_t=0")
     v.addConstrs((H1[a, 1] == H[a, 0] + r_d[a]*p_H*I[a, 0] + r_d[a]*p_V_H*I_V[a, 0] - r_R*H[a, 0]
-                  for a in A), "H t=0")
+                  for a in A), "H_t=0")
     v.addConstrs((D1[a, 1] == D[a, 0] + r_R*p_D*H[a, 0]
-                  for a in A), "D t=0")
+                  for a in A), "D_t=0")
     v.addConstrs((R1[a, 1] == R[a, 0] + r_R*(1 - p_D)*H[a, 0] + r_d[a]*(1 - p_H)*I[a, 0] + r_d[a]*(1 - p_V_H)*I_V[a, 0]
-                  for a in A), "R t=0")
+                  for a in A), "R_t=0")
 
     # Regularization constraints on I, IV
     v.addConstrs(
-        (I1[a, t] - I[a, t] <= eps for a in A for t in range(1, T + 1)), "I upper bd")
+        (I1[a, t] - I[a, t] <= eps for a in A for t in range(1, T + 1)), "I_upper_bd")
     v.addConstrs((I1[a, t] - I[a, t] >= -
-                 eps for a in A for t in range(1, T + 1)), "I lower bd")
+                 eps for a in A for t in range(1, T + 1)), "I_lower_bd")
     v.addConstrs((IV1[a, t] - I_V[a, t] <=
-                 eps for a in A for t in range(1, T + 1)), "IV upper bd")
+                 eps for a in A for t in range(1, T + 1)), "IV_upper_bd")
     v.addConstrs((IV1[a, t] - I_V[a, t] >= -
-                 eps for a in A for t in range(1, T + 1)), "IV lower bd")
+                 eps for a in A for t in range(1, T + 1)), "IV_lower_bd")
 
 
 def solve_LP(l, j, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W, eps):
     # key inputs: I, IV, tn, m, lambda[i], eps
     # key outputs:  V[a,t] (actual vacc), zLP[j] (optimal objective value)
-    global v
+    global v, S1, SV1, E1, EV1, I1, IV1, H1, D1, R1, W1, V1
 
     t_int = math.ceil(t_n)
 
@@ -228,39 +230,78 @@ def solve_LP(l, j, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W, eps):
     # Assumes that addConstrs REPLACES constraints with the same name.
 
     # Start time t=1 to T-1
+    v.remove([constraint for constraint in v.getConstrs()
+             if "Vaccine_willingness" == constraint.constrName.split("[")[0]])
     v.addConstrs((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_calligraphy[a, t]/N[a]*W1[a, t] - V1[a, t]
-                  for a in A for t in range(1, T)), "Vaccine willingness")
+                  for a in A for t in range(1, T)), "Vaccine_willingness")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "S" == constraint.constrName.split("[")[0]])
     v.addConstrs((S1[a, t+1] == S1[a, t] - alpha[a, t]*V_calligraphy[a, t]/N[a]*S1[a, t] - V1[a, t]
                   for a in A for t in range(1, T)), "S")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "SV" == constraint.constrName.split("[")[0]])
     v.addConstrs((SV1[a, t+1] == SV1[a, t] - p_r*alpha[a, t]*V_calligraphy[a, t]/N[a]*SV1[a, t] + V1[a, t]
                   for a in A for t in range(1, T)), "SV")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "E" == constraint.constrName.split("[")[0]])
     v.addConstrs((E1[a, t+1] == E1[a, t] + alpha[a, t]*V_calligraphy[a, t]/N[a]*S[a, t] - r_I*E1[a, t]
                   for a in A for t in range(1, T)), "E")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "EV" == constraint.constrName.split("[")[0]])
     v.addConstrs((EV1[a, t+1] == EV1[a, t] + p_r*alpha[a, t]*V_calligraphy[a, t]/N[a]*SV1[a, t] - r_I*EV1[a, t]
                   for a in A for t in range(1, T)), "EV")
 
     # Start time t=0
+    v.remove([constraint for constraint in v.getConstrs(
+    ) if "Vaccine_willingness_t=0" == constraint.constrName.split("[")[0]])
     v.addConstrs((W1[a, 1] == W[a, 0] - alpha[a, 0]*V_calligraphy[a, 0]/N[a]*W[a, 0] - V1[a, 0]
-                  for a in A), "Vaccine willingness t=0")
+                  for a in A), "Vaccine_willingness_t=0")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "S_t=0" == constraint.constrName.split("[")[0]])
     v.addConstrs((S1[a, 1] == S[a, 0] - alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S[a, 0] - V1[a, 0]
-                  for a in A), "S t=0")
+                  for a in A), "S_t=0")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "SV_t=0" == constraint.constrName.split("[")[0]])
     v.addConstrs((SV1[a, 1] == S_V[a, 0] - p_r*alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S_V[a, 0] + V1[a, 0]
-                  for a in A), "SV t=0")
+                  for a in A), "SV_t=0")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "E_t=0" == constraint.constrName.split("[")[0]])
     v.addConstrs((E1[a, 1] == E[a, 0] + alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S[a, 0] - r_I*E[a, 0]
-                  for a in A), "E t=0")
+                  for a in A), "E_t=0")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "EV_t=0" == constraint.constrName.split("[")[0]])
     v.addConstrs((EV1[a, 1] == E_V[a, 0] + p_r*alpha[a, 0]*V_calligraphy[a, 0]/N[a]*S_V[a, 0] - r_I*E_V[a, 0]
-                  for a in A), "EV t=0")
+                  for a in A), "EV_t=0")
 
     # Constraints change with I, IV, eps (inner loop)
     # Regularization constraints on I, IV
+    v.remove([constraint for constraint in v.getConstrs()
+             if "I_upper_bd" == constraint.constrName.split("[")[0]])
     v.addConstrs(
-        (I1[a, t] - I[a, t] <= eps for a in A for t in range(1, T + 1)), "I upper bd")
+        (I1[a, t] - I[a, t] <= eps for a in A for t in range(1, T + 1)), "I_upper_bd")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "I_lower_bd" == constraint.constrName.split("[")[0]])
     v.addConstrs(
-        (I1[a, t] - I[a, t] >= -eps for a in A for t in range(1, T + 1)), "I lower bd")
+        (I1[a, t] - I[a, t] >= -eps for a in A for t in range(1, T + 1)), "I_lower_bd")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "IV_upper_bd" == constraint.constrName.split("[")[0]])
     v.addConstrs((IV1[a, t] - I_V[a, t] <=
-                 eps for a in A for t in range(1, T + 1)), "IV upper bd")
+                 eps for a in A for t in range(1, T + 1)), "IV_upper_bd")
+
+    v.remove([constraint for constraint in v.getConstrs()
+             if "IV_lower_bd" == constraint.constrName.split("[")[0]])
     v.addConstrs((IV1[a, t] - I_V[a, t] >= -
-                 eps for a in A for t in range(1, T + 1)), "IV lower bd")
+                 eps for a in A for t in range(1, T + 1)), "IV_lower_bd")
 
     try:
         v.optimize()
