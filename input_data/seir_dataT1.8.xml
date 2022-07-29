@@ -52,7 +52,7 @@
   </scenario_data>
 
   <params>
-    <verbosity>2</verbosity> <!-- 0 least verbose output ... 3 most verbose -->
+    <verbosity>3</verbosity> <!-- 0 least verbose output ... 3 most verbose -->
     <simulate_only>1</simulate_only> <!-- If 1, only do simulate-->
     <realloc_flag>1</realloc_flag> <!-- proportional reallocation of unused vacc to non-donors in sim -->
     <nu>0</nu> <!-- include non-donor deaths in objective  -->

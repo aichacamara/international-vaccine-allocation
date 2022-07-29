@@ -225,7 +225,13 @@ def optimize_inner(l, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W):
         t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R = simulate(
             S, S_V, E, E_V, I, I_V, W, V)
         eps = beta*eps
-    return D1[donor, T].x, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W
+    if nu < 1:
+        return D1[donor, T].x, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W
+    else:
+        d1sum = 0
+        for area in A:
+            d1sum += D1[area, T].x
+        return d1sum, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W
 
 
 def formulate_LP(l, t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R, eps, B):
@@ -274,7 +280,7 @@ def formulate_LP(l, t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H
                   for a in A for t in range(1, T)), "S")
     v.addConstrs((SV1[a, t+1] == SV1[a, t] - p_r*alpha[a, t]*V_calligraphy[a, t]/N[a]*SV1[a, t] + V1[a, t]
                   for a in A for t in range(1, T)), "SV")
-    v.addConstrs((E1[a, t+1] == E1[a, t] + alpha[a, t]*V_calligraphy[a, t]/N[a]*S[a, t] - r_I*E1[a, t]
+    v.addConstrs((E1[a, t+1] == E1[a, t] + alpha[a, t]*V_calligraphy[a, t]/N[a]*S1[a, t] - r_I*E1[a, t]
                   for a in A for t in range(1, T)), "E")
     v.addConstrs((EV1[a, t+1] == EV1[a, t] + p_r*alpha[a, t]*V_calligraphy[a, t]/N[a]*SV1[a, t] - r_I*EV1[a, t]
                   for a in A for t in range(1, T)), "EV")
@@ -447,7 +453,7 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
     V_plus = {(area, t): 0 for area in A for t in range(0, T)}
     N_dot = {(t): 0 for t in range(0, T)}
     r_d = {(area): r_0 + delta_r[area] for area in A}
-    t_n = -1  # Initialize t_n so it can be used in output
+    t_n = T  # Initialize t_n so it can be used in output
 
     variant_emerge = False
 
@@ -470,17 +476,28 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
 
         # must compute donor V and V_star before doing rest of areas
         if realloc_flag:
-            # compute V calligraphy in order to use the donor delta e before inner for loop
-            V_calligraphy[donor, t] = I[donor, t] + p_e*I_V[donor, t]
-            # compute delta e (equation 7)
-            delta_E[donor, t] = min(
-                S[donor, t], alpha[donor, t]*S[donor, t]*V_calligraphy[donor, t]/N[donor])
-            # v star (equation 8)
-            V_star[donor, t] = min(
-                W[donor, t] - W[donor, t]*delta_E[donor, t]/S[donor, t], V[donor, t])
             # compute equation 13
             N_dot = 0
             for area in A:
+                # compute V calligraphy in order to use the donor delta e before inner for loop
+                V_calligraphy[area, t] = I[area, t] + p_e*I_V[area, t]
+                # compute delta e (equation 7)
+                delta_E[area, t] = min(
+                    S[area, t], alpha[area, t]*S[area, t]*V_calligraphy[area, t]/N[area])
+                # v star (equation 8)
+                if S[area, t] < 0.0001:
+                    # v star (equation 8)
+                    V_star[area, t] = min(W[area, t], V[area, t])
+                    # compute w (equation 9)
+                    W[area, t + 1] = W[area, t] - V_star[area, t]
+                else:
+                    # v star (equation 8)
+                    V_star[area, t] = min(
+                        W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V[area, t])
+                    # compute w (equation 9
+                    W[area, t + 1] = W[area, t] - W[area, t] * \
+                        delta_E[area, t]/S[area, t] - V_star[area, t]
+
                 if area != donor and W[area, t + 1] > 0:
                     N_dot += N[area]
 
@@ -513,12 +530,19 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
                         (N[area]/N_dot) * (V[donor, t] - V_star[donor, t])
                 else:
                     V_plus[area, t] = V[area, t]
-                # update v star with v (equation 8)
-                V_star[area, t] = min(
-                    W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V_plus[area, t])
-                # update w with new v (equation 9)
-                W[area, t + 1] = W[area, t] - W[area, t] * \
-                    delta_E[area, t]/S[area, t] - V_star[area, t]
+                # update v star with v_plus (equation 8)
+                if S[area, t] < 0.0001:
+                    # v star (equation 8)
+                    V_star[area, t] = min(W[area, t], V_plus[area, t])
+                    # compute w (equation 9)
+                    W[area, t + 1] = W[area, t] - V_star[area, t]
+                else:
+                    # v star (equation 8)
+                    V_star[area, t] = min(
+                        W[area, t] - W[area, t]*delta_E[area, t]/S[area, t], V_plus[area, t])
+                    # compute w (equation 9
+                    W[area, t + 1] = W[area, t] - W[area, t] * \
+                        delta_E[area, t]/S[area, t] - V_star[area, t]
 
             # difference equations
             S[area, t + 1] = S[area, t] - delta_E[area, t] - V_star[area, t]
@@ -555,6 +579,7 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
                 # if true calculate equation 11 (t_n)
                 t_n = t - 1 + (I_sum - n)/(I_tot)
 
+    # Write out ouputs
     if simulate_only:
         with open("./simulation_output/output.log", "w") as output_file:
             output_file.writelines("Simulation \n")
@@ -582,7 +607,7 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
 
             output_file.writelines("Variant Area: " + m + "\n")
 
-            if t_n < 0:
+            if t_n == T:
                 output_file.writelines("Variant did not emerge\n")
             else:
                 output_file.writelines(
