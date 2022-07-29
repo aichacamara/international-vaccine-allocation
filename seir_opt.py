@@ -10,10 +10,33 @@ import gurobipy as gp
 from gurobipy import GRB
 import xml.etree.ElementTree as ET
 import argparse
+import shutil
 
 
 def main(xml_path: str):
+
     import_xml(xml_path=xml_path)
+
+    try:
+        shutil.rmtree(os.getcwd() + "/" + "simulation_output")
+    except:
+        pass
+
+    try:
+        shutil.rmtree(os.getcwd() + "/" + "lp_output")
+    except:
+        pass
+
+    if simulate_only:
+        try:
+            os.mkdir(os.getcwd() + "/" + "simulation_output")
+        except:
+            pass
+    else:
+        try:
+            os.mkdir(os.getcwd() + "/" + "lp_output")
+        except:
+            pass
 
     phase = 1
     l = {i: 0 for i in range(1, iter_lmt_search + 1)}  # Define vector
@@ -38,10 +61,10 @@ def main(xml_path: str):
     # Willing to be vaccinated
     W = {(area, t): 0 for area in A for t in range(0, T)}
 
-    if len(b) == 0:
+    if len(b_arr) == 0:
         B = {(t): B_0 * 1 for t in range(0, T)}
     else:
-        B = {(t): B_0 * b[t] for t in range(0, T)}
+        B = {(t): B_0 * b_arr[t] for t in range(0, T)}
 
         # Set up initial values for the state equations
     for area in A:
@@ -74,20 +97,113 @@ def main(xml_path: str):
     t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R = simulate(
         S, S_V, E, E_V, I, I_V, W, V)
 
-    formulate_LP(l[1], t_n, alpha, V_calligraphy, r_d, S, S_V,
-                 E, E_V, I, I_V, W, H, D, R, epsilon_0, B)
-    v.write("formulate.lp")
+    if not simulate_only:
+        formulate_LP(l[1], t_n, alpha, V_calligraphy, r_d, S, S_V,
+                     E, E_V, I, I_V, W, H, D, R, epsilon_0, B)
+        v.write("./lp_output/formulate.lp")
 
-    # Iterations 1 and 2
-    i = 1
-    z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
-                                                                                S, S_V, E, E_V, I, I_V, W)
-    fL = z[i]  # f at left end pt
+        # Iterations 1 and 2
+        i = 1
+        z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                    S, S_V, E, E_V, I, I_V, W)
+        fL = z[i]  # f at left end pt
 
-    i = 2
-    z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
-                                                                                S, S_V, E, E_V, I, I_V, W)
-    fR = z[i]  # f at right end pt
+        i = 2
+        z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                    S, S_V, E, E_V, I, I_V, W)
+        fR = z[i]  # f at right end pt
+
+        if fL <= fR:  # f is increasing, search to left
+            mult = 1/phi  # x multiplier < 1
+            x1 = l[2]  # largest of 3 current x values
+            x2 = l[1]  # middle of 3 current x values
+            f1 = fR  # f(x1)
+            f2 = fL  # f(x2)
+        if fL > fR:  # f is decreasing, search to right
+            mult = phi  # x multiplier > 1
+            x1 = L[1]  # smallest of 3 current x values
+            x2 = l[2]  # middle of 3 current x values
+            f1 = fL
+            f2 = fR
+
+        # Phase 1 Main loop
+
+        while (i < iter_lmt_search and phase == 1):
+            i = i + 1
+            l[i] = mult*x2
+            x3 = l[i]  # 3rd of 3 current x values
+            z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                        S, S_V, E, E_V, I, I_V, W)
+            f3 = z[i]  # f(x3)
+            if f3 > f2:
+                phase = 2  # x3 is past the minimum
+            x1 = x2  # shift x’s for next Phase 1 iteration
+            x2 = x3
+            f1 = f2
+            f2 = f3
+
+        # Phase 2: Golden ratio search on interval [a, b] with check for unimin
+
+        # Initialize Phase 2 of Optimize
+
+        if x1 < x3:
+            a = x1
+            b = x3
+            fa = f1
+            fb = f3
+
+        if x1 > x3:
+            a = x3
+            b = x1
+            fa = f3
+            fb = f1
+
+        # Two more iterations, at x and y
+        x = a + 0.618 * (b - a)  # current larger x value
+        y = b - 0.618 * (b - a)  # current smaller x value
+        i = i + 1
+        l[i] = x
+        z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                    S, S_V, E, E_V, I, I_V, W)
+        fx = z[i]  # f(x)
+        i = i + 1
+        l[i] = y
+        z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                    S, S_V, E, E_V, I, I_V, W)
+        fy = z[i]  # f(y)
+
+        # Phase 2 main loop
+
+        while (abs(fx - fy) > delta and i < iter_lmt_search):
+            i = i + 1
+            if fx > fy:        		    # minimum is in [a,x], so update y
+                b, x, fx = (x, y, fy)
+                y = b - 0.618 * (b - a)
+                l[i] = y
+                z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                            S, S_V, E, E_V, I, I_V, W)
+                fy = z[i]
+            else:	                    # minimum is in [y,b], so update x
+                a, y, fy = (y, x, fx)
+                x = a + 0.618 * (b - a)
+                l[i] = x
+                z[i], t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W = optimize_inner(l[i], t_n, alpha, V_calligraphy,
+                                                                                            S, S_V, E, E_V, I, I_V, W)
+                fx = z[i]
+            if (fy < fx and fx > fb):
+                # print lambda[i-3],z[i-3],...,lambda[i],z[i]
+                print("Warning: f is not unimin")
+            if (fy > fx and fa < fy):
+                # print lambda[i-3],z[i-3],...,lambda[i],z[i]
+                print("Warning: f is not unimin")
+
+        # Save the optimal objective value
+        if (fy <= fx):
+            z_opt = fy
+            lambda_opt = y
+        else:
+            z_opt = fx
+            lambda_opt = x
 
 
 def optimize_inner(l, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W):
@@ -103,7 +219,7 @@ def optimize_inner(l, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W):
         j = j + 1
         zLP[j] = solve_LP(l, j, t_n, alpha, V_calligraphy,
                           S, S_V, E, E_V, I, I_V, W, eps)
-        v.write("lamda-" + str(l) + "solve" + str(j) + ".lp")
+        v.write("./lp_output/lamda-" + str(l) + "solve" + str(j) + ".lp")
         # Update V using optimal V1 from LP
         V = {(a, t): V1[a, t].x for a in A for t in range(0, T)}
         t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R = simulate(
@@ -138,7 +254,7 @@ def formulate_LP(l, t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H
     W1 = v.addVars(A, range(1, T + 1), name="W1")
     V1 = v.addVars(A, range(0, T), name="V1")             # t = 0, ..., T-1
 
-    if non_donor_deaths:  # or FALSE
+    if nu:  # or FALSE
         v.setObjective(D1[donor, T] + l*sum(I1[a, t] for a in A for t in range(1, t_int + 1))
                        + 1/200000*D1.sum('*', T), GRB.MINIMIZE)  # include non-donor deaths w/ small weight
         # Omit constant I[a,0] from objective, so t = 1, ..., t_int
@@ -215,10 +331,9 @@ def solve_LP(l, j, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W, eps):
 
     # Compute alpha[a,t] here if not done in simulate()??
     # Needs to include constant rate before tn or tn + L and variable rate after
-
     # Objective changes with lambda (outer loop) and tn (inner loop).
 
-    if non_donor_deaths == 0:  # or FALSE
+    if nu == 0:  # or FALSE
         v.setObjective(D1[donor, T] + l*sum(I1[a, t] for a in A for t in range(1, t_int + 1))
                        + 1/200000*D1.sum('*', T), GRB.MINIMIZE)  # include non-donor deaths w/ small weight
         # Omit constant I[a,0] from objective, so t = 1, ..., t_int
@@ -365,9 +480,9 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
                 W[donor, t] - W[donor, t]*delta_E[donor, t]/S[donor, t], V[donor, t])
             # compute equation 13
             N_dot = 0
-            for a in A:
-                if a != donor and W[area, t + 1] > 0:
-                    N_dot += N[a]
+            for area in A:
+                if area != donor and W[area, t + 1] > 0:
+                    N_dot += N[area]
 
         # loop over areas
         for area in A:
@@ -440,93 +555,94 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
                 # if true calculate equation 11 (t_n)
                 t_n = t - 1 + (I_sum - n)/(I_tot)
 
-    with open("output.log", "w") as output_file:
-        output_file.writelines("Simulation \n")
-        output_file.writelines("Time Horizon: " + str(T) + "\n")
+    if simulate_only:
+        with open("./simulation_output/output.log", "w") as output_file:
+            output_file.writelines("Simulation \n")
+            output_file.writelines("Time Horizon: " + str(T) + "\n")
 
-        output_file.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
+            output_file.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
 
-        total_deaths = 0
-        for area in A:
-            total_deaths += D[area, T]
-        output_file.writelines("Total Deaths: " + str(total_deaths) + "\n")
-
-        total_vaccinations = 0
-        for area in A:
-            for t in range(0, T):
-                total_vaccinations += V_star[area, t]
-        output_file.writelines("Total Vaccinations: " +
-                               str(total_vaccinations) + "\n")
-
-        donor_vaccinations = 0
-        for t in range(0, T):
-            donor_vaccinations += V_star[donor, t]
-        output_file.writelines("Donor Vaccinations: " +
-                               str(donor_vaccinations) + "\n")
-
-        output_file.writelines("Variant Area: " + m + "\n")
-
-        if t_n < 0:
-            output_file.writelines("Variant did not emerge\n")
-        else:
-            output_file.writelines(
-                "Day of Variant Emergence: " + str(t_n) + "\n")
-
-        output_file.writelines("\n")
-
-        if verbosity >= 1:
-            output_file.writelines("Vaccination Rates by Day \n")
-            for t in range(0, T):
-                output_file.writelines("    Day " + str(t) + "\n")
-                for area in A:
-                    output_file.writelines(
-                        "        " + area + " " + str(round(V_star[area, t], 4)) + "\n")
-                output_file.writelines("\n")
-        output_file.writelines("\n\n")
-
-        if verbosity >= 2:
-            output_file.writelines("State Variables\n\n")
-            lower_limit = T - 1
-
-            if verbosity >= 3:
-                lower_limit = 0
-
-            population_max = 0
+            total_deaths = 0
             for area in A:
-                if N[area] > population_max:
-                    population_max = N[area]
-            num_length = max(len(str(population_max)) + 4, 7)
+                total_deaths += D[area, T]
+            output_file.writelines("Total Deaths: " + str(total_deaths) + "\n")
 
-            output_state_equations(
-                output_file, num_length, lower_limit, T, "Alpha", alpha)
+            total_vaccinations = 0
+            for area in A:
+                for t in range(0, T):
+                    total_vaccinations += V_star[area, t]
+            output_file.writelines("Total Vaccinations: " +
+                                   str(total_vaccinations) + "\n")
+
+            donor_vaccinations = 0
+            for t in range(0, T):
+                donor_vaccinations += V_star[donor, t]
+            output_file.writelines("Donor Vaccinations: " +
+                                   str(donor_vaccinations) + "\n")
+
+            output_file.writelines("Variant Area: " + m + "\n")
+
+            if t_n < 0:
+                output_file.writelines("Variant did not emerge\n")
+            else:
+                output_file.writelines(
+                    "Day of Variant Emergence: " + str(t_n) + "\n")
+
             output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Susceptible", S)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Susceptible Vaccinated", S_V)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Exposed", E)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Exposed Vaccinated", E_V)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Infected", I)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Infected Vaccinated", I_V)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Recovered", R)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Hospitalized", H)
-            output_file.writelines("\n")
-            output_state_equations(
-                output_file, num_length, lower_limit + 1, T + 1, "Dead", D)
-            output_file.writelines("\n")
+
+            if verbosity >= 1:
+                output_file.writelines("Vaccination Rates by Day \n")
+                for t in range(0, T):
+                    output_file.writelines("    Day " + str(t) + "\n")
+                    for area in A:
+                        output_file.writelines(
+                            "        " + area + " " + str(round(V_star[area, t], 4)) + "\n")
+                    output_file.writelines("\n")
+            output_file.writelines("\n\n")
+
+            if verbosity >= 2:
+                output_file.writelines("State Variables\n\n")
+                lower_limit = T - 1
+
+                if verbosity >= 3:
+                    lower_limit = 0
+
+                population_max = 0
+                for area in A:
+                    if N[area] > population_max:
+                        population_max = N[area]
+                num_length = max(len(str(population_max)) + 4, 7)
+
+                output_state_equations(
+                    output_file, num_length, lower_limit, T, "Alpha", alpha)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Susceptible", S)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Susceptible Vaccinated", S_V)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Exposed", E)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Exposed Vaccinated", E_V)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Infected", I)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Infected Vaccinated", I_V)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Recovered", R)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Hospitalized", H)
+                output_file.writelines("\n")
+                output_state_equations(
+                    output_file, num_length, lower_limit + 1, T + 1, "Dead", D)
+                output_file.writelines("\n")
 
     return t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R
 
@@ -570,7 +686,7 @@ def import_xml(xml_path: str):
 
     scenario_data = root.find("scenario_data")
     global r_I, r_0, r_R, p_V_H, p_H, p_D, a_0, delta_a, p_e, p_r, \
-        L, T_D, p, T, B_0, b
+        L, T_D, p, T, B_0, b_arr
 
     r_I = convert_num(scenario_data.find("r_I").text)
     r_0 = convert_num(scenario_data.find("r_0").text)
@@ -587,23 +703,23 @@ def import_xml(xml_path: str):
     p = convert_num(scenario_data.find("p").text)
     T = convert_num(scenario_data.find("T").text)
     B_0 = convert_num(scenario_data.find("B_0").text)
-    b = scenario_data.find("b").text
-    if not b == None:
-        b = b.split(sep=",")
-        for i in range(0, len(b)):
-            b[i] = convert_num(b[i])
+    b_arr = scenario_data.find("b").text
+    if not b_arr == None:
+        b_arr = b_arr.split(sep=",")
+        for i in range(0, len(b_arr)):
+            b_arr[i] = convert_num(b_arr[i])
     else:
-        b = []
+        b_arr = []
 
     params = root.find("params")
-    global verbosity, simulate_only, realloc_flag, non_donor_deaths, \
+    global verbosity, simulate_only, realloc_flag, nu, \
         p_k, lambda_0, phi, epsilon_0, delta_I, delta, beta, iter_lmt, \
         iter_lmt_search
 
     verbosity = convert_num(params.find("verbosity").text)
     simulate_only = bool(convert_num(params.find("simulate_only").text))
     realloc_flag = bool(convert_num(params.find("realloc_flag").text))
-    non_donor_deaths = bool(convert_num(params.find("non_donor_deaths").text))
+    nu = bool(convert_num(params.find("nu").text))
     p_k = convert_num(params.find("p_k").text)
     lambda_0 = convert_num(params.find("lambda_0").text)
     phi = convert_num(params.find("phi").text)

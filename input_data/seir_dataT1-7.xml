@@ -25,7 +25,7 @@
 
     <donor>area1</donor> <!-- Donor area ### D -> donor -->
     <m>area2</m> <!-- Variant area -->
-    <n>10000</n> <!-- person infection-days until new variant -->
+    <n>5000</n> <!-- person infection-days until new variant -->
   </area_data>
 
   <scenario_data>
@@ -42,8 +42,8 @@
     <L>20</L> <!-- Lag parameter in days for the time a variant takes to reach other area -->
     <T_D>45</T_D> <!-- Time for variant to dominate area -->
     <p>0.01</p> <!-- proportion of people in infected state that have new variant when introduced -->
-    <T>2</T> <!-- Time horizon -->
-    <B_0>1750</B_0> <!-- Vaccine available day 1 -->
+    <T>180</T> <!-- Time horizon -->
+    <B_0>1000</B_0> <!-- Vaccine available day 1 -->
     <b></b> <!-- Vaccine availability as a proportion of day 0, by day = 0,...,T-1. Default = 1 -->
     <!-- 
       to add b here, just seperate the numbers by commas
@@ -52,10 +52,10 @@
   </scenario_data>
 
   <params>
-    <verbosity>3</verbosity> <!-- 0 least verbose output ... 3 most verbose -->
+    <verbosity>2</verbosity> <!-- 0 least verbose output ... 3 most verbose -->
     <simulate_only>1</simulate_only> <!-- If 1, only do simulate-->
     <realloc_flag>0</realloc_flag> <!-- proportional reallocation of unused vacc to non-donors in sim -->
-    <non_donor_deaths>0</non_donor_deaths> <!-- include non-donor deaths in objective  -->
+    <nu>0</nu> <!-- include non-donor deaths in objective  -->
     <p_k>0.75</p_k> <!-- maximum proportion of available vacc used in donor area -->
     <lambda_0>1</lambda_0> <!-- initial Lagrange multiplier for infection -->
     <phi>2</phi> <!-- exploration multiplier for lambda -->
