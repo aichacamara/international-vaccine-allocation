@@ -2,8 +2,6 @@
 from io import TextIOWrapper
 
 # Packages
-import numpy as np
-import time
 import os
 import math
 import gurobipy as gp
@@ -11,11 +9,12 @@ from gurobipy import GRB
 import xml.etree.ElementTree as ET
 import argparse
 import shutil
+import csv
 
 
-def main(xml_path: str):
+def main():
 
-    import_xml(xml_path=xml_path)
+    import_xml(xml_path=os.getcwd() + "/" + input_file)
 
     try:
         shutil.rmtree(os.getcwd() + "/" + "simulation_output")
@@ -669,6 +668,22 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
                     output_file, num_length, lower_limit + 1, T + 1, "Dead", D)
                 output_file.writelines("\n")
 
+        # Write the csv
+        with open("sim_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(
+                ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
+            csv_writer.writerow(
+                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n, L])
+            for area in A:
+                for t in range(0, T + 1):
+                    if t != T:
+                        csv_writer.writerow([area, t, S[area, t], S_V[area, t], E[area, t], E_V[area, t], I[area, t],
+                                            I_V[area, t], H[area, t], D[area, t], R[area, t], W[area, t], V[area, t], t_n, L])
+                    else:
+                        csv_writer.writerow([area, t, S[area, t], S_V[area, t], E[area, t], E_V[area, t], I[area, t],
+                                        I_V[area, t], H[area, t], D[area, t], R[area, t], W[area, t], "", t_n, L])
+
     return t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R
 
 
@@ -818,4 +833,6 @@ if __name__ == '__main__':
     # Parse the command line
     args = parser.parse_args()
 
-    main(os.getcwd() + "/" + args.input)
+    global input_file
+    input_file = args.input
+    main()
