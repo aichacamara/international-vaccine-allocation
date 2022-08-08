@@ -5,3 +5,6 @@ __pycache__
 *.lp
 .DS_Store
 output.log
+
+optimization_output
+simulation_output

@@ -18,11 +18,8 @@ def main():
 
     try:
         shutil.rmtree(os.getcwd() + "/" + "simulation_output")
-    except:
-        pass
-
-    try:
         shutil.rmtree(os.getcwd() + "/" + "lp_output")
+        shutil.rmtree(os.getcwd() + "/" + "optimization_output")
     except:
         pass
 
@@ -34,6 +31,11 @@ def main():
     else:
         try:
             os.mkdir(os.getcwd() + "/" + "lp_output")
+        except:
+            pass
+
+        try:
+            os.mkdir(os.getcwd() + "/" + "optimization_output")
         except:
             pass
 
@@ -204,17 +206,108 @@ def main():
             z_opt = fx
             lambda_opt = x
 
+        # Write the csv
+        with open("./optimization_output/opt_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(
+                ["area", "t", "S", "SV", "E", "EV", "I",
+                    "IV", "H", "D", "R", "W", "V", "t_n", "L"]
+            )
+            csv_writer.writerow(
+                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n, L]
+            )
+            for area in A:
+                csv_writer.writerow(
+                    [area, 0, S[area, 0], S_V[area, 0], E[area, 0], E_V[area, 0], I[area, 0],
+                     I_V[area, 0], H[area, 0], D[area, 0], R[area, 0], W[area, 0], V[area, 0], t_n, L]
+                )
+                for t in range(1, T + 1):
+                    if t != T:
+                        csv_writer.writerow(
+                            [area, t, S1[area, t].x, SV1[area, t].x, E1[area, t].x, EV1[area, t].x, I1[area, t].x,
+                             IV1[area, t].x, H1[area, t].x, D1[area, t].x, R1[area, t].x, W1[area, t].x, V1[area, t].x, t_n, L]
+                        )
+                    else:
+                        csv_writer.writerow(
+                            [area, t, S1[area, t].x, SV1[area, t].x, E1[area, t].x, EV1[area, t].x, I1[area, t].x,
+                             IV1[area, t].x, H1[area, t].x, D1[area, t].x, R1[area, t].x, W1[area, t].x, "", t_n, L]
+                        )
+
+        with open("./optimization_output/output.log", "w") as output_file:
+            output_file.write("Optimization\n\n")
+            if nu:
+                output_file.write("Optimal donor deaths: " + str(z_opt))
+            else:
+                output_file.write("Optimal total deaths: " + str(z_opt))
+            output_file.write("\n")
+            output_file.write("Lambda opt: " + str(lambda_opt) + "\n")
+            output_file.write("Donor Deaths: " + str(D1[donor, T].x) + "\n")
+            total_deaths = 0
+            for t in range(1, T + 1):
+                for area in A:
+                    total_deaths += D1[area, t].x
+            output_file.write("Deaths: " + str(total_deaths) + "\n")
+            if t_n == T:
+                output_file.write("Variant did not emerge\n")
+            else:
+                output_file.write(
+                    "Day of Variant Emergence: " + str(t_n) + "\n")
+            output_file.write("Vaccinations by area\n")
+            total_vaccinations = 0
+            for area in A:
+                area_vaccinations = 0
+                for t in range(0, T):
+                    area_vaccinations = V1[area, t].x
+                    total_vaccinations += area_vaccinations
+                output_file.write(area + " " + str(area_vaccinations) + "\n")
+            output_file.write("Total Vaccinations: " +
+                              str(total_vaccinations) + "\n")
+            output_file.write("\n")
+            if verbosity >= 1:
+                output_file.write("Outer Loop\n")
+                output_file.write(
+                    "  iteration    lambda    deaths    suboptimality  \n")
+                for i in range(1, iter_lmt_search + 1):
+                    output_file.write(f'{i: ^{13}}')
+                    output_file.write(f'{round(l[i], 8): ^{10}}')
+                    output_file.write(f'{round(z[i], 8): ^{10}}')
+                    output_file.write(f'{round(z[i] - z_opt, 8): ^{17}}')
+                    output_file.write("\n")
+                output_file.write("\n")
+
+                output_file.write("Inner Loop\n")
+                output_file.write("  iteration    Z LP    suboptimality  \n")
+
+                for i in range(0, iter_lmt):
+                    output_file.write(f'{i: ^{13}}')
+                    output_file.write(f'{round(zLP[i], 8): ^{8}}')
+                    output_file.write(f'{round(zLP[i] - z_opt, 8): ^{17}}')
+                    output_file.write("\n")
+                output_file.write("\n")
+
+                if verbosity >= 2:
+                    output_file.write("Infection Comparisons\n")
+                    output_file.write(
+                        "  day    optimal I - previous I by area  \n")
+                    for t in range(1, T + 1):
+                        output_file.write(f'{t: ^{7}}')
+                        for area in A:
+                            output_file.write("  " + str(I1[area, t].x - I[area, t]) + "  ")
+                        output_file.write("\n")
+
+
+
 
 def optimize_inner(l, t_n, alpha, V_calligraphy, S, S_V, E, E_V, I, I_V, W):
     # key inputs: I[a,t], IV[a,t]v(simulated, called I_hat, IV_hat in paper), tn, m, lambda[i]
     # key outputs: V1[a,t] (optimal vacc from LP, called V_new in paper), tn, m, z[i] (donor deaths)
-    global V1
+    global V1, zLP
 
     j = 0
     eps = epsilon_0
-    zLP = {j: 0 for j in range(iter_lmt)}  # Define vector zLP and set to 0
+    zLP = {j: 0 for j in range(0, iter_lmt)}  # Define vector zLP and set to 0
 
-    while abs(zLP[j] - zLP[max(0, j-1)]) > delta_I or j < 2:
+    while abs(zLP[j] - zLP[max(0, j - 1)]) > delta_I or j < 2:
         j = j + 1
         zLP[j] = solve_LP(l, j, t_n, alpha, V_calligraphy,
                           S, S_V, E, E_V, I, I_V, W, eps)
@@ -581,51 +674,51 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
     # Write out ouputs
     if simulate_only:
         with open("./simulation_output/output.log", "w") as output_file:
-            output_file.writelines("Simulation \n")
-            output_file.writelines("Time Horizon: " + str(T) + "\n")
+            output_file.write("Simulation \n\n")
+            output_file.write("Time Horizon: " + str(T) + "\n")
 
-            output_file.writelines("Donor Deaths: " + str(D[donor, T]) + "\n")
+            output_file.write("Donor Deaths: " + str(D[donor, T]) + "\n")
 
             total_deaths = 0
             for area in A:
                 total_deaths += D[area, T]
-            output_file.writelines("Total Deaths: " + str(total_deaths) + "\n")
+            output_file.write("Total Deaths: " + str(total_deaths) + "\n")
 
             total_vaccinations = 0
             for area in A:
                 for t in range(0, T):
                     total_vaccinations += V_star[area, t]
-            output_file.writelines("Total Vaccinations: " +
-                                   str(total_vaccinations) + "\n")
+            output_file.write("Total Vaccinations: " +
+                              str(total_vaccinations) + "\n")
 
             donor_vaccinations = 0
             for t in range(0, T):
                 donor_vaccinations += V_star[donor, t]
-            output_file.writelines("Donor Vaccinations: " +
-                                   str(donor_vaccinations) + "\n")
+            output_file.write("Donor Vaccinations: " +
+                              str(donor_vaccinations) + "\n")
 
-            output_file.writelines("Variant Area: " + m + "\n")
+            output_file.write("Variant Area: " + m + "\n")
 
             if t_n == T:
-                output_file.writelines("Variant did not emerge\n")
+                output_file.write("Variant did not emerge\n")
             else:
-                output_file.writelines(
+                output_file.write(
                     "Day of Variant Emergence: " + str(t_n) + "\n")
 
-            output_file.writelines("\n")
+            output_file.write("\n")
 
             if verbosity >= 1:
-                output_file.writelines("Vaccination Rates by Day \n")
+                output_file.write("Vaccination Rates by Day \n")
                 for t in range(0, T):
-                    output_file.writelines("    Day " + str(t) + "\n")
+                    output_file.write("    Day " + str(t) + "\n")
                     for area in A:
-                        output_file.writelines(
+                        output_file.write(
                             "        " + area + " " + str(round(V_star[area, t], 4)) + "\n")
-                    output_file.writelines("\n")
-            output_file.writelines("\n\n")
+                    output_file.write("\n")
+            output_file.write("\n\n")
 
             if verbosity >= 2:
-                output_file.writelines("State Variables\n\n")
+                output_file.write("State Variables\n\n")
                 lower_limit = T - 1
 
                 if verbosity >= 3:
@@ -639,37 +732,37 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
 
                 output_state_equations(
                     output_file, num_length, lower_limit, T, "Alpha", alpha)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Susceptible", S)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Susceptible Vaccinated", S_V)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Exposed", E)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Exposed Vaccinated", E_V)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Infected", I)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Infected Vaccinated", I_V)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Recovered", R)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Hospitalized", H)
-                output_file.writelines("\n")
+                output_file.write("\n")
                 output_state_equations(
                     output_file, num_length, lower_limit + 1, T + 1, "Dead", D)
-                output_file.writelines("\n")
+                output_file.write("\n")
 
         # Write the csv
-        with open("sim_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
+        with open("./simulation_output/sim_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
@@ -682,7 +775,7 @@ def simulate(S, S_V, E, E_V, I, I_V, W, V):
                                             I_V[area, t], H[area, t], D[area, t], R[area, t], W[area, t], V[area, t], t_n, L])
                     else:
                         csv_writer.writerow([area, t, S[area, t], S_V[area, t], E[area, t], E_V[area, t], I[area, t],
-                                        I_V[area, t], H[area, t], D[area, t], R[area, t], W[area, t], "", t_n, L])
+                                             I_V[area, t], H[area, t], D[area, t], R[area, t], W[area, t], "", t_n, L])
 
     return t_n, alpha, V_calligraphy, r_d, S, S_V, E, E_V, I, I_V, W, H, D, R
 
@@ -811,17 +904,17 @@ def output_state_equations(output_file: TextIOWrapper,
     Returns:
         None
     """
-    output_file.writelines(state_name + "\n")
-    output_file.writelines(f'{"day": ^{num_length}}')
+    output_file.write(state_name + "\n")
+    output_file.write(f'{"day": ^{num_length}}')
     for area in A:
-        output_file.writelines(f'{area: ^{num_length}}')
-    output_file.writelines("\n")
+        output_file.write(f'{area: ^{num_length}}')
+    output_file.write("\n")
     for t in range(lower_limit, upper_limit):
-        output_file.writelines(f'{t: ^{num_length}}')
+        output_file.write(f'{t: ^{num_length}}')
         for area in A:
-            output_file.writelines(
+            output_file.write(
                 f'{round(state[area, t], 2): ^{num_length}}')
-        output_file.writelines("\n")
+        output_file.write("\n")
 
 
 if __name__ == '__main__':
