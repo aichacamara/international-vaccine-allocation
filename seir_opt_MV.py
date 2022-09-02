@@ -10,7 +10,7 @@ import csv
 
 def main():
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, H1, D1, R1, W1, V1, v, \
-        z_opt, V_opt, V_cal_opt, lambda_opt, donor_deaths, total_deaths, t_opt
+        z_opt, V_opt, V_cal_opt, lambda_opt, donor_deaths, total_deaths, t_opt, LP_count
     global p_k ## test
     # read input file, compute k and B
     import_xml(xml_path=os.getcwd() + "/" + input_file)
@@ -92,7 +92,7 @@ def main():
     total_deaths = 0
     for a in A:
         total_deaths += D[a, T]
-    V_opt = {(a, t): V_star[a, t] for a in A for t in range(0, T)}
+    V_opt = {(a, t): (V_star[a, t] if t < T else 0) for a in A for t in range(0, T+1)}
     V_cal_opt = {(a, t): V_cal[a, t] for a in A for t in range(0, T+1)}  
                                             # t=0,...,T b/c used in output
     if not simulate_only:
@@ -117,6 +117,7 @@ def main():
         # Iteration 0. Find V_min for init V, lambda (to avoid using z[0] in search)
         l[0] = lambda_0
         i = 0
+        LP_count = 0
         z[i], t_n, alpha, V_cal, S, S_V, E, E_V, I, I_V, W = \
             optimize_inner(l[i], t_n, alpha, V_cal)
         # Iterations 1 and 2
@@ -209,34 +210,29 @@ def main():
                 print("Warning: f is not unimin: y < fx and fx > fb")
             if (fy > fx and fa < fy):
                 print("Warning: f is not unimin: fy > fx and fa < fy")
+        print("LP count: ", LP_count)
 
         # Write the csv (optimize)
-        with open("./optimization_output/opt_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
+        with open("./optimization_output/plot_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I",
                     "IV", "H", "D", "R", "W", "V", "t_n", "L"]
             )
             csv_writer.writerow(
-                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n, L]
+                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_opt, L]
             )
             for a in A:
                 csv_writer.writerow(
-                    [a, 0, S[a, 0], S_V[a, 0], E[a, 0], E_V[a, 0], I[a, 0],
-                     I_V[a, 0], H[a, 0], D[a, 0], R[a, 0], W[a, 0], V[a, 0], t_n, L]
+                    [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
+                     IV0[a], 0, 0, 0, W0[a], V_opt[a, 0], t_opt, L]
                 )
                 for t in range(1, T + 1):
-                    if t != T:
-                        csv_writer.writerow(
-                            [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
-                             IV1[a, t].x, H1[a, t].x, D1[a, t].x, R1[a, t].x, W1[a, t].x, V1[a, t].x, t_n, L]
+                    csv_writer.writerow(
+                        [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
+                            IV1[a, t].x, H1[a, t].x, D1[a, t].x, R1[a, t].x, W1[a, t].x, V_opt[a, t], t_opt, L]
                         )
-                    else:
-                        csv_writer.writerow(
-                            [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
-                             IV1[a, t].x, H1[a, t].x, D1[a, t].x, R1[a, t].x, W1[a, t].x, "", t_n, L]
-                        )
-
+ 
         # Write output file (optimize)
         with open("./optimization_output/output.log", "w") as output_file:
             output_file.write("Optimization\n\n")
@@ -254,7 +250,7 @@ def main():
             if t_n == T:
                 output_file.write("Variant did not emerge\n")
             else:
-                output_file.write("Day of Variant Emergence: " + str(t_n) + "\n")
+                output_file.write("Day of Variant Emergence: " + str(t_opt) + "\n")
             output_file.write("Optimal vaccinations by area\n")
             total_vaccinations = 0
             for a in A:
@@ -325,7 +321,7 @@ def main():
 
 def optimize_inner(l, t_n, alpha, V_cal):
     global zNLP, zNLP_min, V_min, z_opt, V_opt, V_cal_opt, \
-        lambda_opt, zLP, j, donor_deaths, total_deaths, t_opt
+        lambda_opt, zLP, j, donor_deaths, total_deaths, t_opt, LP_count
     t_LP = min(math.ceil(t_n)+2, T) # Use fixed t_n in  for all j, but include 2 more days since
                                     # t_n may increase  
     eps = eps_prev = epsilon_0 # eps_prev is eps at the previous best sim
@@ -335,8 +331,10 @@ def optimize_inner(l, t_n, alpha, V_cal):
     zNLP_min = 1000000000    # initialize min ZNLP
     zNLP_prev = 2*zNLP_min   # initialize previous value of min zNLP. They must differ.
  
-    while (abs(zNLP_prev - zNLP_min) > delta_I or j < 2) and j < iter_lmt:
+ #  while (abs(zNLP_prev - zNLP_min) > delta_I or j < 2) and j < iter_lmt:
+    while (abs(zLP[max(0,j)] - zLP[max(0,j-1)]) > delta_I or j < 2) and j < iter_lmt:
         j = j + 1
+        LP_count += 1
         zLP[j] = solve_LP(l, t_LP, alpha, V_cal, eps)
         # update V using optimal V1 from LP
         V = {(a, t): V1[a, t].x for a in A for t in range(0, T)}
@@ -365,7 +363,7 @@ def optimize_inner(l, t_n, alpha, V_cal):
             total_deaths = 0
             for a in A:
                 total_deaths += D[a, T]
-            V_opt = {(a, t): V_star[a, t] for a in A for t in range(0, T)}
+            V_opt = {(a, t): (V_star[a, t] if t < T else 0) for a in A for t in range(0, T+1)}
             V_cal_opt = {(a, t): V_cal[a, t] for a in A for t in range(0, T+1)}  
     #v.write("./lp_output/lamda-" + str(l) + "solve" + str(j) + ".lp") ##test: write LP
     return wtd_deaths, t_n, alpha, V_cal, S, S_V, E, E_V, I, I_V, W
