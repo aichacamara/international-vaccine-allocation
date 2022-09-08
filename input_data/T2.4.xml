@@ -23,7 +23,7 @@
 
     <donor>area1</donor>   <!-- Donor area -->
     <m>area2</m>           <!-- Variant area -->
-    <n>30000</n>           <!-- person infection-days until new variant -->
+    <n>20000</n>           <!-- person infection-days until new variant -->
   </area_data>
 
   <scenario_data>
@@ -40,8 +40,8 @@
     <L>20</L>              <!-- 20 Lag for variant to reach other areas, days -->
     <T_D>45</T_D>          <!-- 45 Time for variant to dominate -->
     <p>0.01</p>            <!-- prop of infected that have new variant when introduced -->
-    <T>180</T>             <!-- Time horizon, days -->
-    <B_0>500</B_0>         <!-- Vaccine available day 1 -->
+    <T>90</T>             <!-- Time horizon, days -->
+    <B_0>1000</B_0>         <!-- Vaccine available day 1 -->
     <b></b>                <!-- Vaccine avail as a prop, day = 0,...,T-1. Default = 1 -->
     <!-- 
       to add b here, just seperate the numbers by commas
@@ -58,11 +58,11 @@
     <p_k>1</p_k>                          <!-- max prop of avail vacc used in donor area -->
     <lambda_0>.00025</lambda_0>              <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
-    <epsilon_0>500</epsilon_0>            <!-- exploration tolerance for I -->
-    <delta_I>0.1</delta_I>                  <!-- termination tolerance for I -->
+    <epsilon_0>200</epsilon_0>            <!-- exploration tolerance for I -->
+    <delta_I>0.001</delta_I>                  <!-- termination tolerance for I -->
     <delta>0.1</delta>                    <!-- termination tolerance for lambda -->
     <beta>0.9</beta>                      <!-- convergence parameter -->
-    <iter_lmt>60</iter_lmt>                <!-- iteration limit for I -->
+    <iter_lmt>40</iter_lmt>                <!-- iteration limit for I -->
     <iter_lmt_search>3</iter_lmt_search> <!-- iteration limit for lambda -->
   </params>
 </data>
