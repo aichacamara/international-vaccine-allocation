@@ -23,7 +23,7 @@
 
     <donor>area1</donor>   <!-- Donor area -->
     <m>area2</m>           <!-- Variant area -->
-    <n>20000</n>           <!-- person infection-days until new variant -->
+    <n>10000</n>           <!-- person infection-days until new variant -->
   </area_data>
 
   <scenario_data>
@@ -40,7 +40,7 @@
     <L>20</L>              <!-- 20 Lag for variant to reach other areas, days -->
     <T_D>45</T_D>          <!-- 45 Time for variant to dominate -->
     <p>0.01</p>            <!-- prop of infected that have new variant when introduced -->
-    <T>90</T>             <!-- Time horizon, days -->
+    <T>45</T>             <!-- Time horizon, days -->
     <B_0>1000</B_0>         <!-- Vaccine available day 1 -->
     <b></b>                <!-- Vaccine avail as a prop, day = 0,...,T-1. Default = 1 -->
     <!-- 
@@ -54,15 +54,15 @@
     <simulate_only>0</simulate_only>      <!-- If 1, only do simulate-->
     <realloc_flag>1</realloc_flag>        <!-- proportional reallocation of unused vacc to 
                                             non-donors in sim -->
-    <nu>0.25</nu>                            <!-- include fraction nu of non-donor deaths in objective  -->
-    <p_k>1</p_k>                          <!-- max prop of avail vacc used in donor area -->
-    <lambda_0>.00025</lambda_0>              <!-- initial Lagrange multiplier for infection -->
+    <nu>0</nu>                            <!-- include fraction nu of non-donor deaths in objective  -->
+    <p_k>0</p_k>                          <!-- **TEST init V prop of vacc in donor area** max prop of avail vacc used in donor area -->
+    <lambda_0>.0001</lambda_0>              <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
-    <epsilon_0>200</epsilon_0>            <!-- exploration tolerance for I -->
+    <epsilon_0>250</epsilon_0>            <!-- exploration tolerance for I -->
     <delta_I>0.001</delta_I>                  <!-- termination tolerance for I -->
     <delta>0.1</delta>                    <!-- termination tolerance for lambda -->
     <beta>0.9</beta>                      <!-- convergence parameter -->
-    <iter_lmt>40</iter_lmt>                <!-- iteration limit for I -->
-    <iter_lmt_search>3</iter_lmt_search> <!-- iteration limit for lambda -->
+    <iter_lmt>15</iter_lmt>                <!-- iteration limit for I -->
+    <iter_lmt_search>1</iter_lmt_search> <!-- iteration limit for lambda -->
   </params>
 </data>
