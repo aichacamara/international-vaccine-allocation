@@ -3,14 +3,16 @@ title: "SEIR OPT simulation time plot"
 author: Mike Veatch
 ---
 
-```{r}
+```{r plot by MV}
+
 library(tidyverse)
 library(tidyr)
 library(dplyr)
-sim1 = read.csv("~/research/vaccine/R_plots/optimization_output/opt_seir_dataT2.3.csv")
+
+sim1 = read.csv("~/research/vaccine/code/output/plot_T2.4.csv")
 #          sep = "", header = T)
-# rename to std name
-# sim1 = opt_seir_dataT2.3
+# rename to std name if opened from Import tab
+# sim1 = plot_T2.3
 
 t_n = sim1$t_n[1] # read data from row 1
 L = sim1$L[1]
@@ -18,14 +20,6 @@ L = sim1$L[1]
 sim = sim1[-1,1:13] # remove row 1 and t_n, L columns
 
 areas = unique(sim$area) # list of areas
-
-#sim_wide = pivot_wider(data = sim,
-#    names_from = area,
-#    values_from = c(3:13))
-```
-
-```{r annotated edited by MV}
-
 sim |>
   # Compute new columns
   mutate(Infectious = I + IV) |>
@@ -39,15 +33,15 @@ sim |>
   sim_long
 
 # Rename variables
-sim_long$state = recode(sim_long$state, "H" = "Hospitalized", "R"="Recovered", "D" = "Deaths")
+sim_long$state = recode(sim_long$state, "H" = "Hospitalized", "R"="Recovered", "D" = "Deaths", "S" = "Susceptible")
 
 # vertical line at t_n + L for area1, t_n for others
 variant <- data.frame(a = areas, t_variant = c(t_n + L, t_n))
 
 sim_long |>
   # Select variables for plotting
-  filter(state == "Infectious" | state == "Deaths" | state == "Cases" | state == "Recovered"
-         | state == "Vaccinations") |>
+  filter(state == "Infectious" | state == "Deaths" | state == "Cases" ) |> ## 
+       ##  | state == "Vaccinations" | state == "Susceptible") |>
   ggplot(mapping = aes(x = t, y = value)) +
   geom_line(mapping = aes(color = state),  size = 1) +
   # vertical line at t_n + L for area1, t_n for others
@@ -64,20 +58,23 @@ sim_long |>
   # a simple theme to replicate the appearance of Abe's plot
   theme_bw()
 
+```
+
+```{r plot2 by MV}
 # Graph area1 with vertical line at t_N + L
 sim_long |>
   filter(state == "Infectious" | state == "Deaths" | state == "Cases" | state == "Recovered"
          | state == "Vaccinations") |>
+  filter(area == "area1") |>
   ggplot(mapping = aes(x = t, y = value)) +
   geom_line(mapping = aes(color = state),  size = 1) +
   # vertical line at t_n + L
   geom_vline(xintercept = t_n + L, linetype = 5, size = 0.75) +
   scale_x_continuous(breaks=seq(0,max(sim_long$t),10)) + # space by 10
   theme_bw()
-
 ```
 
-```{r code from sam}
+```{r plot from sam}
 sim |>
   group_by(area) |>
   mutate(V_cum = cumsum(V)) |>
@@ -96,5 +93,13 @@ sim_long |>
   facet_wrap(~area) +
   scale_x_continuous(breaks = unique(sim_long$t)) +
   theme_bw()
+```
+
+
+```{r old}
+
+#sim_wide = pivot_wider(data = sim,
+#    names_from = area,
+#    values_from = c(3:13))
 ```
 
