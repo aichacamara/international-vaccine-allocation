@@ -52,9 +52,13 @@
   <params>
     <verbosity>3</verbosity>              <!-- 0 least verbose output ... 3 most verbose -->
     <simulate_only>0</simulate_only>      <!-- If 1, only do simulate-->
+    <improving>0</improving>              <!-- 1 improving search, inner loop-->
     <realloc_flag>1</realloc_flag>        <!-- proportional reallocation of unused vacc to 
                                             non-donors in sim -->
     <nu>0</nu>                            <!-- include fraction nu of non-donor deaths in objective  -->
+    <T0>4</T0>                            <!-- final days without vaccination. Must be >= 1 -->
+    <dT>4</dT>                            <!-- days after t_n[0] in Lagr (t_LP). Set >= T to use all t -->
+    <t_switch>90</t_switch>                <!-- day 2-area init policy switches 1->2. Set >= T for all 1 -->
     <p_k>1</p_k>                          <!-- max prop of avail vacc used in donor area -->
     <lambda_0>.01</lambda_0>              <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
