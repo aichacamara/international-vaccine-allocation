@@ -69,7 +69,8 @@ def main():
         #v.Params.DualReductions = 0 ##test: to see if unbounded or infeasible
         v.Params.NonConvex = 2  # Suppress warning for nonconvex obj/constraints
         #v.Params.LogToConsole = 0
-        v.Params.TimeLimit = 120 # seconds for each QP
+        v.Params.TimeLimit = 600 # seconds for each QP
+        v.Params.MIPGap = 0.02 # MIP gap for each QP
         # QP variables are S1 for state var S, etc. All are continuous and nonnegative by default.
         S1 = v.addVars(A, range(1, T + 1), name="S1")          # t = 1, ..., T
         SV1 = v.addVars(A, range(1, T + 1), name="SV1")
@@ -359,7 +360,7 @@ def solve_QP(l, t_sim, alpha, V):
 
     v.optimize()
     QP_count += 1
-    if v.status == GRB.OPTIMAL:
+    if v.status == GRB.OPTIMAL or v.status == GRB.TIME_LIMIT:
 #       if QP_count - infeas_count == 1: 
 #           v.write("./optimization_output/lamda-" + str(l) + ".lp") ##test: write first QP
 
