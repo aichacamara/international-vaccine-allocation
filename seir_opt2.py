@@ -8,19 +8,21 @@ import xml.etree.ElementTree as ET
 import argparse
 import shutil
 import csv
+import sys
 
 def main():
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, H1, D1, R1, W1, V1, v, iter, V_opt, \
-        z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase
+        z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase, fn_base
 
     # read input file, compute k and B
     import_xml(xml_path=os.getcwd() + "/" + input_file)
-
-    # initialize output directory
+    # initialize output filename and directory
     try:
             os.mkdir(os.getcwd() + "/" + "output")
     except:
         pass 
+    fn_base = f'./output/{input_file.split("/")[-1][0:-4]}_T{T:03d}_nu{nu:3.1f}' # output file name uses inputs
+    sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
     # Initialize state variables
     S0 = {a: 0 for a in A}
@@ -68,7 +70,7 @@ def main():
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
         v = gp.Model("vaccine_opt")
         #v.Params.DualReductions = 0 ##test: to see if unbounded or infeasible
-        v.Params.LogToConsole = 0
+        v.Params.LogToConsole = 0 # 1: Gurobi output turned on
         v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum. 
         # LP variables are S1 for state var S, etc. All are continuous and nonnegative by default.
         S1 = v.addVars(A, range(1, T + 1), name="S1")          # t = 1, ..., T
@@ -181,7 +183,8 @@ def main():
         print("LP count: ", LP_count, "Infeas count: ", infeas_count)
 
         # Write the csv (optimize)
-        with open("./output/plot_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
+        #with open("./output/plot_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file: OLD: no param in fn; plot_ ...
+        with open(fn_base + "_plot.csv", "w") as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I",
@@ -202,7 +205,8 @@ def main():
                         )           # V_min, t_min may be from a diff LP than S1,...
  
         # Write output file (optimize)
-        with open("./output/" +  input_file.split("/")[-1][0:-4] + ".log", "w") as fn:
+        #with open("./output/" +  input_file.split("/")[-1][0:-4] + ".log", "w") as fn: OLD: no param in fn
+        with open(fn_base + ".out", "w") as fn:
             # input echo
             fn.write("Optimization " + input_file + "\n\n")
             fn.write("Time Horizon: " + str(T) + "\n")
@@ -688,7 +692,7 @@ def simulate(V):
 
     if simulate_only:
         # Write the csv (simulate)
-        with open("./output/sim_" + input_file.split("/")[-1][0:-4] + ".csv", "w") as csv_file:
+        with open(fn_base + "_plot" + ".csv", "w") as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
