@@ -838,11 +838,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # First positional argument (this must be present)
-    parser.add_argument('input', type=str, help='Name of input xml file')
+    parser.add_argument('input', type=str, help='Directory of input xml file')
 
     # Parse the command line
     args = parser.parse_args()
 
-    global input_file
-    input_file = args.input
-    main()
+    input_dir = args.input
+    files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
+    print(files)
+    
+    for f in files:
+        global input_file
+        input_file = os.path.join(input_dir,f)
+        print(input_file)
+        main()

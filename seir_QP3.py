@@ -22,7 +22,7 @@ def main():
     except:
         pass 
     fn_base = f'./output/{input_file.split("/")[-1][0:-4]}_T{T:03d}_nu{nu:3.1f}' # output file name uses inputs
-    sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
+    sys.stdout = open(fn_base + "_con_QP.out", "w") # console output redirected to file
 
     # Initialize state variables
     S0 = {a: 0 for a in A}
@@ -187,7 +187,7 @@ def main():
         print("QP count: ", QP_count, "Infeas count: ", infeas_count)
 
         # Write the csv (optimize)
-        with open(fn_base + "_plot.csv", "w") as csv_file:
+        with open(fn_base + "_QP_plot.csv", "w") as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I",
@@ -208,7 +208,7 @@ def main():
                         )
  
         # Write output file (optimize)
-        with open(fn_base + ".out", "w") as fn:
+        with open(fn_base + "_QP.out", "w") as fn:
             # input echo
             fn.write("QP " + input_file + "\n\n")
             fn.write("Time Horizon: " + str(T) + "\n")

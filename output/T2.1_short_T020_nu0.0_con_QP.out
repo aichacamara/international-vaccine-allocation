@@ -1,0 +1,754 @@
+Set parameter Username
+Academic license - for non-commercial use only - expires 2023-10-28
+Set parameter NonConvex to value 2
+Set parameter TimeLimit to value 600
+Set parameter MIPGap to value 0.02
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x230788f0
+Model has 152 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+Presolve removed 152 rows and 170 columns
+Presolve time: 0.01s
+Presolved: 853 rows, 423 columns, 2154 nonzeros
+Presolved model has 152 bilinear constraint(s)
+Variable types: 423 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 6.461817e+00, 446 iterations, 0.01 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    6.46182    0  133          -    6.46182      -     -    0s
+H    0     0                       7.6404665    6.46182  15.4%     -    0s
+H    0     0                       7.6402708    6.46182  15.4%     -    0s
+     0     0    6.46182    0  132    7.64027    6.46182  15.4%     -    0s
+H    0     0                       7.1528892    6.46182  9.66%     -    0s
+     0     2    6.46182    0  132    7.15289    6.46182  9.66%     -    0s
+  2342   821    7.10324  165  101    7.15289    6.47388  9.49%  13.3    5s
+H 2438   758                       7.1528115    6.47388  9.49%  13.1    5s
+H 3129  1147                       7.1516276    6.47388  9.48%  12.7    5s
+H 5319  3247                       7.1516266    6.47388  9.48%  10.1    7s
+H 6179  4106                       7.1514138    6.47388  9.47%   9.2    7s
+ 10375  8132    7.11059 1932   20    7.15141    6.47388  9.47%   6.8   10s
+ 20412 14703    7.11059 3544   19    7.15141    6.47388  9.47%   4.2   15s
+H27714 16981                       7.1512565    6.49070  9.24%   4.8   19s
+H28388 17525                       7.1491235    6.49091  9.21%   4.9   19s
+ 28763 17733    6.75583  128  117    7.14912    6.49091  9.21%   4.9   20s
+ 34561 22354    6.74850  100   93    7.14912    6.49847  9.10%   5.3   25s
+ 41936 27370     cutoff  375         7.14912    6.49847  9.10%   5.8   30s
+*44664 27875             577       7.1286725    6.49847  8.84%   5.9   31s
+H45687 28131                       7.1286725    6.49870  8.84%   5.9   32s
+ 48883 29355 infeasible  134         7.12867    6.49870  8.84%   6.1   35s
+*50431 28034             670       7.1127723    6.49870  8.63%   6.0   35s
+H50669 28076                       7.1127319    6.49870  8.63%   6.0   35s
+ 56952 29457    6.99040  104  101    7.11273    6.49885  8.63%   6.7   40s
+
+Explored 57466 nodes (390670 simplex iterations) in 40.13 seconds (14.44 work units)
+Thread count was 4 (of 4 available processors)
+
+Solution count 10: 7.11273 7.11277 7.12867 ... 7.15281
+
+Solve interrupted
+Best objective 7.112731889504e+00, best bound 6.498852235506e+00, gap 8.6307%
+Optimize failed at lambda =  0.01   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 490 rows, 440 columns and 1526 nonzeros
+Model fingerprint: 0x8612afc0
+Model has 304 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 394 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 7.11273
+
+Presolve removed 397 rows and 170 columns
+Presolve time: 0.01s
+Presolved: 853 rows, 423 columns, 2154 nonzeros
+Presolved model has 152 bilinear constraint(s)
+Variable types: 423 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 6.462030e+00, 462 iterations, 0.01 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    6.46203    0  132    7.11273    6.46203  9.15%     -    0s
+     0     0    6.46203    0  132    7.11273    6.46203  9.15%     -    0s
+     0     2    6.46203    0  132    7.11273    6.46203  9.15%     -    1s
+
+Explored 952 nodes (14742 simplex iterations) in 2.30 seconds (1.32 work units)
+Thread count was 4 (of 4 available processors)
+
+Solution count 1: 7.11273 
+
+Solve interrupted
+Best objective 7.112731889504e+00, best bound 6.462030242746e+00, gap 9.1484%
+Optimize failed at lambda =  0.01   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x0c4655f5
+Model has 456 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 21.8151
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.35 seconds (0.17 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 21.8151 
+
+Solve interrupted
+Best objective 2.181507692552e+01, best bound -, gap -
+Optimize failed at lambda =  0.04   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x1f7465fc
+Model has 608 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 3.43715
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.17 seconds (0.07 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 3.43715 
+
+Solve interrupted
+Best objective 3.437145630501e+00, best bound -, gap -
+Optimize failed at lambda =  0.0025   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x380d137d
+Model has 760 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.51825
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.13 seconds (0.05 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.51825 
+
+Solve interrupted
+Best objective 2.518249065750e+00, best bound -, gap -
+Optimize failed at lambda =  0.000625   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x0fbb94de
+Model has 912 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.28852
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.14 seconds (0.06 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.28852 
+
+Solve interrupted
+Best objective 2.288524924562e+00, best bound -, gap -
+Optimize failed at lambda =  0.00015625   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0xbffa8634
+Model has 1064 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.23109
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.36 seconds (0.16 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.23109 
+
+Solve interrupted
+Best objective 2.231093889265e+00, best bound -, gap -
+Optimize failed at lambda =  3.90625e-05   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x257ba060
+Model has 1216 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21674
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.17 seconds (0.07 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21674 
+
+Solve interrupted
+Best objective 2.216736130441e+00, best bound -, gap -
+Optimize failed at lambda =  9.765625e-06   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0xe232cda0
+Model has 1368 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21315
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.44 seconds (0.15 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21315 
+
+Solve interrupted
+Best objective 2.213146690735e+00, best bound -, gap -
+Optimize failed at lambda =  2.44140625e-06   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x48504099
+Model has 1520 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21225
+
+Presolve removed 152 rows and 170 columns
+Presolve time: 0.01s
+Presolved: 853 rows, 423 columns, 2154 nonzeros
+Presolved model has 152 bilinear constraint(s)
+Variable types: 423 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 1.886393e+00, 427 iterations, 0.01 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    1.88639    0  134    2.21225    1.88639  14.7%     -    0s
+
+Explored 1 nodes (427 simplex iterations) in 0.65 seconds (0.27 work units)
+Thread count was 4 (of 4 available processors)
+
+Solution count 1: 2.21225 
+
+Solve interrupted
+Best objective 2.212249330808e+00, best bound 1.886393419875e+00, gap 14.7296%
+Optimize failed at lambda =  6.103515625e-07   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x4ef2589b
+Model has 1672 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-07, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21202
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.15 seconds (0.05 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21202 
+
+Solve interrupted
+Best objective 2.212024990827e+00, best bound -, gap -
+Optimize failed at lambda =  1.52587890625e-07   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x1cdaabfa
+Model has 1824 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [4e-08, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21197
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.49 seconds (0.20 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21197 
+
+Solve interrupted
+Best objective 2.211968905831e+00, best bound -, gap -
+Optimize failed at lambda =  3.814697265625e-08   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x2fcf23a0
+Model has 1976 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-08, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.59 seconds (0.27 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211954884582e+00, best bound -, gap -
+Optimize failed at lambda =  9.5367431640625e-09   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x1da7047a
+Model has 2128 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [2e-09, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.15 seconds (0.06 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211951379270e+00, best bound -, gap -
+Optimize failed at lambda =  2.384185791015625e-09   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x6db0ada8
+Model has 2280 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [6e-10, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.37 seconds (0.16 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950502942e+00, best bound -, gap -
+Optimize failed at lambda =  5.960464477539063e-10   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0xf4ecc45d
+Model has 2432 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-10, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.74 seconds (0.39 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950283860e+00, best bound -, gap -
+Optimize failed at lambda =  1.4901161193847657e-10   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x083a680f
+Model has 2584 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [4e-11, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve removed 152 rows and 170 columns
+Presolve time: 0.01s
+Presolved: 853 rows, 423 columns, 2154 nonzeros
+Presolved model has 152 bilinear constraint(s)
+Variable types: 423 continuous, 0 integer (0 binary)
+
+Root relaxation: interrupted, 418 iterations, 0.01 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0          -    0         2.21195    1.25773  43.1%     -    0s
+
+Explored 1 nodes (418 simplex iterations) in 0.58 seconds (0.21 work units)
+Thread count was 4 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950229090e+00, best bound 1.257731284125e+00, gap 43.1393%
+Optimize failed at lambda =  3.725290298461914e-11   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0xc95a97b4
+Model has 2736 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [9e-12, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.15 seconds (0.07 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950215397e+00, best bound -, gap -
+Optimize failed at lambda =  9.313225746154785e-12   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x7812b442
+Model has 2888 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [2e-12, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.35 seconds (0.13 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950211974e+00, best bound -, gap -
+Optimize failed at lambda =  2.3283064365386963e-12   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x750eebd1
+Model has 3040 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [6e-13, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.58 seconds (0.26 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950211118e+00, best bound -, gap -
+Optimize failed at lambda =  5.820766091346741e-13   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x160e9a8d
+Model has 3192 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [1e-13, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.13 seconds (0.06 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950210904e+00, best bound -, gap -
+Optimize failed at lambda =  1.4551915228366852e-13   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0xa3e37bdb
+Model has 3344 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [4e-13, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.33 seconds (0.12 work units)
+Thread count was 1 (of 4 available processors)
+
+Solution count 1: 2.21195 
+
+Solve interrupted
+Best objective 2.211950211036e+00, best bound -, gap -
+Optimize failed at lambda =  4.153116606175899e-13   Status =  11
+Gurobi Optimizer version 9.5.2 build v9.5.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 245 rows, 440 columns and 763 nonzeros
+Model fingerprint: 0x88d706ef
+Model has 3496 quadratic constraints
+Coefficient statistics:
+  Matrix range     [7e-03, 1e+00]
+  QMatrix range    [2e-06, 1e-05]
+  QLMatrix range   [8e-01, 1e+00]
+  Objective range  [3e-13, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [2e+00, 9e+04]
+Presolve removed 149 rows and 164 columns
+
+Continuous model is non-convex -- solving as a MIP
+
+
+Loaded MIP start from previous solve with objective 2.21195
+
+Presolve removed 152 rows and 170 columns
+Presolve time: 0.01s
+Presolved: 853 rows, 423 columns, 2154 nonzeros
+Presolved model has 152 bilinear constraint(s)
+Variable types: 423 continuous, 0 integer (0 binary)
+
+Root relaxation: objective 1.886110e+00, 434 iterations, 0.01 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    1.88611    0  133    2.21195    1.88611  14.7%     -    0s
+     0     0    1.88611    0  133    2.21195    1.88611  14.7%     -    0s
+     0     2    1.88611    0  133    2.21195    1.88611  14.7%     -    0s
+* 2083  1155             488       2.1665783    1.88611  12.9%   6.1    2s
+
+Explored 2159 nodes (13416 simplex iterations) in 2.92 seconds (1.33 work units)
+Thread count was 4 (of 4 available processors)
+
+Solution count 2: 2.16658 2.21195 
+
+Solve interrupted
+Warning: max constraint violation (2.0968e-06) exceeds tolerance
+Best objective 2.166578313417e+00, best bound 1.886109893665e+00, gap 12.9452%
+Optimize failed at lambda =  3.122841008007527e-13   Status =  11
+QP count:  23 Infeas count:  0
