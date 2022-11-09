@@ -23,22 +23,27 @@ This version has Susan's changes, plus
 -----------------------------------------------------------------------------
 Usage
 
-To run either program, give the input filename. For example, if the input file T2 is in the folder input_data (in the current directory):
+To run seir_opt2, give the name of the FOLDER containing input files:
 
-> python seir_QP3.py input_data/T2.xml 
+> python seir_opt2 input_data	
+
+This does multiple runs, one for each file in this folder. 
+
+To run seir_QP3, give the path to the input file. To read T2.xml in the folder "input_data": 
+
+> python seir_QP3 input_data/T2.xml	
 
 Both programs use the same input file, though not all inputs are used by QP.
-
- 
 -----------------------------------------------------------------------------
 Outputs
 
-Both programs write the same output files with names, e.g.,
+The subfolder "output" is created. For each input file, seir_opt2 writes three files with names, e.g.,
 
   T2_T090_nu0.0.out		output
   T2_T090_nu0.0_con.out		console output, i.e., Gurobi
   T2_T090_nu0.0_plot.csv	csv file for time plots with R
 
+seir_QP3 appends "_QP" to the names.
 To direct Gurobi output to console, remove "sys.stdout = ..."
 To turn off console (Gurobi) output, change v.Params.LogToConsole from 1 to 0
 
