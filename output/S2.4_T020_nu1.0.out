@@ -1,0 +1,85 @@
+Optimization input_data/S2.4.xml
+
+Time Horizon: 20
+Donor in t_n: no
+Improving search: False
+Initial policy priority to 1  t_switch: 20
+dT: 4
+nu: 1
+lambda: 0.1
+eps: 100
+Converg. phi: 4  delta_I: 0.001  iter_search: 10
+
+Convergence: Min/Max change in V_cal, (sim - LP)
+
+i  j     lambda    zNLP    deaths tot_deaths t_n    conv of V_cal     vacc by area
+first simulation
+0  0       0        0       10.83    10.83    5.84                    49908  89300 
+optimal (best deaths found)
+0  2     0.1000             10.02    10.02    5.93 (   -0.0,   0.0)  49759  89627 
+minimum (best zNLP for last lambda) w/ convergence for last LP
+12 2     0.0000    10.01    10.02    10.02    5.93 (   -0.0,   0.0)  49759  89627 
+
+Outer Loop at last lambda. j_min = iter of inner loop that achieves best zNLP
+iter   lambda j_min wtd deaths subopt   t_n
+0      0.1000  2     10.02      0.00   5.93 
+1      0.1000  2     10.02      0.00   5.93 
+2      0.4000  2     10.02      0.00   5.93 
+3      0.0250  2     10.02      0.00   5.93 
+4      0.0063  2     10.02      0.00   0.00 
+5      0.0016  2     10.02      0.00   0.00 
+6      0.0004  2     10.02      0.00   0.00 
+7      0.0001  2     10.02      0.00   0.00 
+8      0.0000  2     10.02      0.00   0.00 
+9      0.0000  2     10.02      0.00   0.00 
+10     0.0000  2     10.02      0.00   0.00 
+11     0.0000  2     10.02      0.00   0.00 
+12     0.0000  2     10.02      0.00   0.00 
+
+
+Inner Loop at last lambda
+iter   zNLP     subopt   deaths donor_deaths tot_deaths t_n   vacc by area
+0        0.00    -10.01    10.02      3.35     10.02    5.93  49759  89627 
+1       10.01      0.00    10.02      3.35     10.02    5.93  49759  89627 
+2       10.01      0.00    10.02      3.35     10.02    5.93  49759  89627 
+
+
+Vaccinations: sim of best LP (best j), last lambda (V_min) 
+  day    V_opt by area 
+   0     0.0    10000.0  
+   1     0.0    10000.0  
+   2     0.0    10000.0  
+   3     0.0    10000.0  
+   4     0.0    10000.0  
+   5     0.0    10000.0  
+   6     0.0    10000.0  
+   7     0.0    10000.0  
+   8     373.1935412634921    9626.806458736508  
+   9     10000.0    0.0  
+  10     10000.0    0.0  
+  11     10000.0    0.0  
+  12     10000.0    0.0  
+  13     9386.281200779362    3.637978807091713e-12  
+  14     0.0    0.0  
+  15     0.0    0.0  
+  16     0.0    0.0  
+
+Optimal vaccinations (V_opt) 
+  day    V_opt by area 
+   0     0.0    10000.0  
+   1     0.0    10000.0  
+   2     0.0    10000.0  
+   3     0.0    10000.0  
+   4     0.0    10000.0  
+   5     0.0    10000.0  
+   6     0.0    10000.0  
+   7     0.0    10000.0  
+   8     373.1935412634921    9626.806458736508  
+   9     10000.0    0.0  
+  10     10000.0    0.0  
+  11     10000.0    0.0  
+  12     10000.0    0.0  
+  13     9386.281200779362    3.637978807091713e-12  
+  14     0.0    0.0  
+  15     0.0    0.0  
+  16     0.0    0.0  

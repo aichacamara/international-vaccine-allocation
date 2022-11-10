@@ -21,7 +21,7 @@ def main():
             os.mkdir(os.getcwd() + "/" + "output")
     except:
         pass 
-    fn_base = f'./output/{input_file.split("/")[-1][0:-4]}_T{T:03d}_nu{nu:3.1f}' # output file name uses inputs
+    fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_T{T:03d}_nu{nu:3.1f}' # output file name uses inputs
     sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
     # Initialize state variables
@@ -849,6 +849,9 @@ if __name__ == '__main__':
     
     for f in files:
         global input_file
-        input_file = os.path.join(input_dir,f)
+        global input_filename
+        input_filename = f
+        input_file = os.path.join(input_dir,input_filename)
         print(input_file)
+        print(input_filename)
         main()
