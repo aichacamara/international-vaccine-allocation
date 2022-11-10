@@ -11,8 +11,8 @@ import csv
 import sys
 
 def main():
-    global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, H1, D1, R1, W1, V1, v, iter, V_opt, \
-        z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase, fn_base
+    global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, iter, V_opt, \
+        z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase, fn_base #H1,
 
     # read input file, compute k and B
     import_xml(xml_path=os.getcwd() + "/" + input_file)
@@ -79,7 +79,7 @@ def main():
         EV1 = v.addVars(A, range(1, T + 1), name="EV1")
         I1 = v.addVars(A, range(1, T + 1), name="I1")
         IV1 = v.addVars(A, range(1, T + 1), name="IV1")
-        H1 = v.addVars(A, range(1, T + 1), name="H1")
+        #H1 = v.addVars(A, range(1, T + 1), name="H1")
         D1 = v.addVars(A, range(1, T + 1), name="D1")
         R1 = v.addVars(A, range(1, T + 1), name="R1")
         W1 = v.addVars(A, range(1, T + 1), name="W1")
@@ -201,7 +201,7 @@ def main():
                 for t in range(1, T + 1):
                     csv_writer.writerow(
                         [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
-                            IV1[a, t].x, H1[a, t].x, D1[a, t].x, R1[a, t].x, W1[a, t].x, V_min[a, t], t_min, L] # was V_opt[a, 0], t_opt
+                            IV1[a, t].x, 0, D1[a, t].x, R1[a, t].x, W1[a, t].x, V_min[a, t], t_min, L] # was V_opt[a, 0], t_opt
                         )           # V_min, t_min may be from a diff LP than S1,...
  
         # Write output file (optimize)
@@ -214,6 +214,10 @@ def main():
             fn.write("Improving search: " + str(improving) + "\n")
             if n_a == 2:
                 fn.write("Initial policy priority to " + str(2 - np.sign(t_switch)) + "  t_switch: " + str(t_switch) + "\n")
+            fn.write("variant emergence n: " + str(n) + "  L: " + str(L) + "  T_D: " + str(T_D) + "\n")
+            fn.write("Mortality p_D: " + str(p_D) + "  p_V_D: " + str(p_V_D) \
+                + "Vacc effectiveness p_e: " + str(p_e) + "  p_r: " + str(p_r) +"\n\n")
+            fn.write("Rates r_I: " + str(r_I) + "  r_0: " + str(r_0) + "a_0: " + str(a_0) + "  delta_a: " + str(delta_a) + "\n\n")
             fn.write("dT: " + str(dT) + "\n")
             fn.write("nu: " + str(nu) + "\n")
             fn.write("lambda: " + str(lambda_0) + "\n")
@@ -473,7 +477,7 @@ def optimize_inner(l, V):
     return deaths_min
 
 def solve_LP(l, t_LP, alpha, V_cal, eps):
-    global S1, SV1, E1, EV1, I1, IV1, H1, D1, R1, W1, V1, v
+    global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v #H1
 
     # Warm start using bases (can also use solution)
     if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
@@ -511,11 +515,11 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
                   for a in A for t in range(1, T)), "I")
     v.addConstrs((IV1[a, t+1] == IV1[a, t] + r_I*EV1[a, t] - r_d[a]*IV1[a, t]
                   for a in A for t in range(1, T)), "IV")
-    v.addConstrs((H1[a, t+1] == H1[a, t] + r_d[a]*p_H*I1[a, t] + r_d[a]*p_V_H*IV1[a, t] - r_R*H1[a, t]
-                  for a in A for t in range(1, T)), "H")
-    v.addConstrs((D1[a, t+1] == D1[a, t] + r_R*p_D*H1[a, t]
+    #v.addConstrs((H1[a, t+1] == H1[a, t] + r_d[a]*p_H*I1[a, t] + r_d[a]*p_V_H*IV1[a, t] - r_R*H1[a, t]
+    #              for a in A for t in range(1, T)), "H")
+    v.addConstrs((D1[a, t+1] == D1[a, t] + r_d[a]*p_D*I1[a, t] + r_d[a]*p_V_D*IV1[a, t]
                   for a in A for t in range(1, T)), "D")
-    v.addConstrs((R1[a, t+1] == R1[a, t] + r_R*(1 - p_D)*H1[a, t] + r_d[a]*(1 - p_H)*I1[a, t] + r_d[a]*(1 - p_V_H)*IV1[a, t]
+    v.addConstrs((R1[a, t+1] == R1[a, t] + r_d[a]*(1 - p_D)*I1[a, t] + r_d[a]*(1 - p_V_D)*IV1[a, t]
                   for a in A for t in range(1, T)), "R")
     # Conservation constraints
     #v.addConstrs((S1[a,t]+SV1[a,t]+E1[a,t]+EV1[a,t]+I1[a,t]+IV1[a,t]+R1[a,t]+H1[a,t]+D1[a,t] == N[a]
@@ -537,11 +541,11 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
                   for a in A), "I_t=0")
     v.addConstrs((IV1[a, 1] == IV0[a] + r_I*EV0[a] - r_d[a]*IV0[a]
                   for a in A), "IV_t=0")
-    v.addConstrs((H1[a, 1] == r_d[a]*p_H*I0[a] + r_d[a]*p_V_H*IV0[a]
-                  for a in A), "H_t=0")
-    v.addConstrs((D1[a, 1] == 0
+    #v.addConstrs((H1[a, 1] == r_d[a]*p_H*I0[a] + r_d[a]*p_V_H*IV0[a]
+    #              for a in A), "H_t=0")
+    v.addConstrs((D1[a, 1] == r_d[a]*p_D*I0[a] + r_d[a]*p_V_D*IV0[a]
                   for a in A), "D_t=0")
-    v.addConstrs((R1[a, 1] == r_d[a]*(1 - p_H)*I0[a] + r_d[a]*(1 - p_V_H)*IV0[a]
+    v.addConstrs((R1[a, 1] == r_d[a]*(1 - p_D)*I0[a] + r_d[a]*(1 - p_V_D)*IV0[a]
                   for a in A), "R_t=0")
 
     # Regularization constraints on V_cal: constant in t
@@ -581,7 +585,7 @@ def simulate(V):
     I = {(a, t): 0 for a in A for t in range(T+1)}   
     I_V = {(a, t): 0 for a in A for t in range(T+1)}
     R = {(a, t): 0 for a in A for t in range(T+1)}
-    H = {(a, t): 0 for a in A for t in range(T+1)}
+    #H = {(a, t): 0 for a in A for t in range(T+1)}
     D = {(a, t): 0 for a in A for t in range(T+1)}
     W = {(a, t): 0 for a in A for t in range(T+1)}
     V_cal = {(a, t): 0 for a in A for t in range(T+1)}  # t=0,...,T b/c used in output
@@ -665,11 +669,10 @@ def simulate(V):
             I[a, t + 1] = I[a, t] + r_I*E[a, t] - r_d[a]*I[a, t]
             I_V[a, t + 1] = I_V[a, t] + r_I * \
                 E_V[a, t] - r_d[a]*I_V[a, t]
-            H[a, t + 1] = H[a, t] + r_d[a]*p_H*I[a, t] + \
-                r_d[a]*p_V_H*I_V[a, t] - r_R*H[a, t]
-            D[a, t + 1] = D[a, t] + r_R*p_D*H[a, t]
-            R[a, t + 1] = R[a, t] + r_R*(1 - p_D)*H[a, t] + r_d[a]*(
-                1 - p_H)*I[a, t] + r_d[a]*(1 - p_V_H)*I_V[a, t]
+            #H[a, t + 1] = H[a, t] + r_d[a]*p_H*I[a, t] + \
+            #    r_d[a]*p_V_H*I_V[a, t] - r_R*H[a, t]
+            D[a, t + 1] = D[a, t] + r_d[a]*p_D*I[a, t] + r_d[a]*p_V_D*I_V[a, t]
+            R[a, t + 1] = R[a, t] + r_d[a]*(1 - p_D)*I[a, t] + r_d[a]*(1 - p_V_D)*I_V[a, t]
 
         # check for the variant occuring, do not calculate if variant already emerged
         if not variant_emerge:
@@ -702,10 +705,10 @@ def simulate(V):
                 for t in range(T + 1):
                     if t != T:
                         csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                            I_V[a, t], H[a, t], D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
+                                            I_V[a, t], 0, D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
                     else:
                         csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                             I_V[a, t], H[a, t], D[a, t], R[a, t], W[a, t], 0, t_sim, L])
+                                             I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
     return t_sim, alpha, V_cal, V_star, D
 
 def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to the XML file
@@ -739,14 +742,13 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     n_a = len(A)
     # read scenario data
     scenario_data = root.find("scenario_data")
-    global r_I, r_0, r_R, p_V_H, p_H, p_D, a_0, delta_a, p_e, p_r, \
-        L, T_D, p, T, B_0, b_arr
+    global r_I, r_0, r_R, p_D, p_V_D, a_0, delta_a, p_e, p_r, \
+        L, T_D, p, T, B_0, b_arr  #p_H, p_V_H,
     r_I = convert_num(scenario_data.find("r_I").text)
     r_0 = convert_num(scenario_data.find("r_0").text)
     r_R = convert_num(scenario_data.find("r_R").text)
-    p_V_H = convert_num(scenario_data.find("p_V_H").text)
-    p_H = convert_num(scenario_data.find("p_H").text)
     p_D = convert_num(scenario_data.find("p_D").text)
+    p_V_D = convert_num(scenario_data.find("p_V_D").text)
     a_0 = convert_num(scenario_data.find("a_0").text)
     delta_a = convert_num(scenario_data.find("delta_a").text)
     p_e = convert_num(scenario_data.find("p_e").text)
@@ -845,13 +847,13 @@ if __name__ == '__main__':
 
     input_dir = args.input
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
-    print(files)
+    #print(files)
     
     for f in files:
         global input_file
         global input_filename
         input_filename = f
         input_file = os.path.join(input_dir,input_filename)
-        print(input_file)
-        print(input_filename)
+        #print(input_file)
+        #print(input_filename)
         main()
