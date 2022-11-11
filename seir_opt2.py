@@ -742,11 +742,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     n_a = len(A)
     # read scenario data
     scenario_data = root.find("scenario_data")
-    global r_I, r_0, r_R, p_D, p_V_D, a_0, delta_a, p_e, p_r, \
+    global r_I, r_0, p_D, p_V_D, a_0, delta_a, p_e, p_r, \
         L, T_D, p, T, B_0, b_arr  #p_H, p_V_H,
     r_I = convert_num(scenario_data.find("r_I").text)
     r_0 = convert_num(scenario_data.find("r_0").text)
-    r_R = convert_num(scenario_data.find("r_R").text)
     p_D = convert_num(scenario_data.find("p_D").text)
     p_V_D = convert_num(scenario_data.find("p_V_D").text)
     a_0 = convert_num(scenario_data.find("a_0").text)
