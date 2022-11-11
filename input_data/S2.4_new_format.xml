@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>  <!-- "No H" format" -->
 
 <data>
   <area_data>
@@ -29,8 +29,8 @@
   <scenario_data>
     <r_I>0.2</r_I>         <!-- rate out of exposed (E) state into infectious (I) state -->
     <r_0>0.286571</r_0>    <!-- rate out of infectious state without testing -->
-    <r_R>0.0666667</r_R>   <!-- rate out of state hospitalized (H) into recovery or death -->
-<!--<p_V_H>0.15</p_V_H>         P(Hospitalized | Infected and Vaxxed)
+<!--<r_R>0.0666667</r_R>        rate out of state hospitalized (H) into recovery or death
+    <p_V_H>0.15</p_V_H>         P(Hospitalized | Infected and Vaxxed)
     <p_H>0.3</p_H>              P(Hospitalized | Infected) 
     <p_D>0.1</p_D>              P(Dead | Hospitalized) -->
     <p_D>0.03</p_D>        <!--  P(Dead | Infected) -->
