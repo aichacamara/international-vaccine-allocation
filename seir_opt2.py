@@ -21,7 +21,7 @@ def main():
             os.mkdir(os.getcwd() + "/" + "output")
     except:
         pass 
-    fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_T{T:03d}_nu{nu:3.1f}' # output file name uses inputs
+    fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_tsw{t_switch:03d}' #_nu{nu:3.1f} output file name uses inputs
     sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
     # Initialize state variables
@@ -209,20 +209,18 @@ def main():
         with open(fn_base + ".out", "w") as fn:
             # input echo
             fn.write("Optimization " + input_file + "\n\n")
-            fn.write("Time Horizon: " + str(T) + "\n")
+            fn.write("Time Horizon: " + str(T) +  "  nu: " + str(nu) + "\n")
             fn.write("Donor in t_n: no\n")
             fn.write("Improving search: " + str(improving) + "\n")
             if n_a == 2:
                 fn.write("Initial policy priority to " + str(2 - np.sign(t_switch)) + "  t_switch: " + str(t_switch) + "\n")
             fn.write("variant emergence n: " + str(n) + "  L: " + str(L) + "  T_D: " + str(T_D) + "\n")
             fn.write("Mortality p_D: " + str(p_D) + "  p_V_D: " + str(p_V_D) \
-                + "Vacc effectiveness p_e: " + str(p_e) + "  p_r: " + str(p_r) +"\n\n")
-            fn.write("Rates r_I: " + str(r_I) + "  r_0: " + str(r_0) + "a_0: " + str(a_0) + "  delta_a: " + str(delta_a) + "\n\n")
-            fn.write("dT: " + str(dT) + "\n")
-            fn.write("nu: " + str(nu) + "\n")
-            fn.write("lambda: " + str(lambda_0) + "\n")
-            fn.write("eps: " + str(epsilon_0) + "\n")
-            fn.write("Converg. phi: " + str(phi) + "  delta_I: " + str(delta_I) + "  iter_search: " + str(iter_lmt_search) + "\n\n")
+                + "  Vacc effectiveness p_e: " + str(p_e) + "  p_r: " + str(p_r) +"\n")
+            fn.write("Rates r_I: " + str(r_I) + "  r_0: " + str(r_0) + "  a_0: " + str(a_0) + "  delta_a: " + str(delta_a) + "\n")
+            fn.write("Lambda Converg. lambda: " + str(lambda_0) + "  phi: " + str(phi) + "  dT: " + str(dT) + \
+                    "  delta: " + str(delta) + "  iter_search: " + str(iter_lmt_search) + "\n")
+            fn.write("LP Converg. delta_I: " + str(delta_I) + "  beta: " + str(beta) + "  iter: " + str(iter_lmt) + "\n\n")
             # Verbosity 0
             fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")        
 
@@ -277,7 +275,6 @@ def main():
                     fn.write("\n")
                 fn.write("\n")
 
-                fn.write("\n")
                 fn.write("Inner Loop at last lambda\n")
                 #fn.write("iter     zLP     sim zNLP subopt_zNLP deaths   t_n   vacc by area\n")
                 fn.write("iter   zNLP     subopt   deaths donor_deaths tot_deaths t_n   vacc by area\n")
@@ -291,7 +288,7 @@ def main():
 
             # Verbosity 1
             if verbosity >= 1:
-                fn.write("\nVaccinations: sim of best LP (best j), last lambda (V_min) \n"
+                fn.write("Vaccinations: sim of best LP (best j), last lambda (V_min) \n"
                         "  day    V_opt by area \n")
                 for t in range(T - T0 + 1):
                     fn.write(f'{t: ^{7}}')
