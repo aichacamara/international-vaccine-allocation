@@ -218,6 +218,10 @@ def main():
             fn.write("Mortality p_D: " + str(p_D) + "  p_V_D: " + str(p_V_D) \
                 + "  Vacc effectiveness p_e: " + str(p_e) + "  p_r: " + str(p_r) +"\n")
             fn.write("Rates r_I: " + str(r_I) + "  r_0: " + str(r_0) + "  a_0: " + str(a_0) + "  delta_a: " + str(delta_a) + "\n")
+            fn.write("gamma by area: ") 
+            for a in A:
+                fn.write(str(gamma[a]) + "  ")
+            fn.write("\n")
             fn.write("Lambda Converg. lambda: " + str(lambda_0) + "  phi: " + str(phi) + "  dT: " + str(dT) + \
                     "  delta: " + str(delta) + "  iter_search: " + str(iter_lmt_search) + "\n")
             fn.write("LP Converg. delta_I: " + str(delta_I) + "  beta: " + str(beta) + "  iter: " + str(iter_lmt) + "\n\n")
