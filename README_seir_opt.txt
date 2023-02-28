@@ -32,7 +32,7 @@ To run old programs, such as seir_QP2, give the path to the input file. To read 
 -----------------------------------------------------------------------------
 Outputs
 
-The subfolder "output" is created. For each input file, seir_opt2 writes three files with names, e.g.,
+The subfolder "output" is created. For each input file, seir_opt2 writes two or threee files, e.g.,
 
   C2.3_tsw180.out		output
   C2.3_tsw180_con.out		console output, i.e., Gurobi
@@ -56,21 +56,9 @@ verbosity >= 2: outer loop showing progress of algorithm
 
 When simulate_only = 1, the initial policy is simulated and a csv file is written. Other output for this option hasn't been done. 
 ----------------------------------------------------------------------------
-Features not implemented
-
-Two features have not been implemented for more than 2 areas:
-
-Initial policy: For 2 areas, priority is to the first area (presumed to be the donor) until t_switch. So t_switch >= T gives priority to the donor, t_switch = 0 gives priority to the non-donor. General priority policies have not been implemented for more than 2 areas. Instead, vaccine is allocated using p_k, which is also used to limit feasible policies:
- p_k = max prop of avail vacc used in donor area
-If p_k = 1 (the usual value, meaning no policy limit) the initial policy gives priority to donor. If p_k < 1, that proportion goes to the donor and the rest is allocated to other areas in proportion to their initial unvaccinated population S. 
-
-Reallocation of vaccines in simulate when realloc_flag = 1: 
-For 2 areas, unused vaccine is reallocated to the other area each day. This is needed to avoid discarding vaccine that could be used by the other area, if the LP solution is not feasible (b/c of the linear approx.)
-For more than 2 areas, an error message is printed.
-----------------------------------------------------------------------------
 Plots
 
-Open time_plots.Rmd in RStudio. Use the first chunk {r plot by MV}. It uses the packages tidyverse, tidyr, dplyr. If you haven't installed these, add the install statements 
+Open time_plots.Rmd in RStudio. It uses the packages tidyverse, tidyr, dplyr. If you haven't installed these, add the install statements 
   install.packages("tidyverse")
   install.packages("tidyr")
   install.packages("dplyr")
@@ -78,20 +66,21 @@ before the library statements.
 
 Change the read.csv statement to give the path to your csv file, e.g.,
 
-sim1 = read.csv("~/research/vaccine/code/output/T2_plot.csv")
+sim1 = read.csv("~/research/vaccine/code/output/C2.3_plot.csv")
 
-Note: you can also use Import/From text (base) in the Environment window, but then you rename the data frame. Look in the environment to see the data frame name; it should be the same as the file name. Uncomment the statement, e.g.,
+The first chunk creates large plots, two for each area. Also run the second chunk to get smaller plots that are readable in black and white. 
 
-sim1 = T2_plot
+Notes 
+1. You can open the data file with Import/From text (base) in the Environment window, but then you need to rename the data frame. Look in the environment to see the data frame name. Uncomment the statement, e.g.,
 
-Now the chunk should run and create one plot for each area. 
+sim1 = C2.3_plot
 
-To change which variables are plotted, edit the filter statement, e.g.,
+2. To change which variables are plotted, edit the filter statement, e.g.,
 
 filter(state == "Infectious" | state == "Deaths"   | state == "Cases" 
          | state == "Vaccinations" | state == "Susceptible") |>
 
-There must be |> (the native pipe) at the end. To see the list of variables, after running the chunk once look at the state column of the data frame sim_long. It includes all the state variables, plus some that were computed in R:
+There must be |> (the native pipe) at the end. To see the list of variables, after running the chunk look at the state column of the data frame sim_long. It includes all the state variables, plus some that were computed in R:
 
 mutate(Infectious = I + IV)
 mutate(Cases = E + EV + I + IV + H + R + D)
@@ -108,9 +97,6 @@ All areas have dashed vertical lines at
   t_n = day variant appears
   t_n + L = day variant spreads to other areas
 Each area should only have one line, but I don't know how to do different lines on different plots.
-
-
-
 
 
   
