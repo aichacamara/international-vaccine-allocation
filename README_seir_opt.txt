@@ -23,17 +23,15 @@ This version has Susan's changes, plus
 -----------------------------------------------------------------------------
 Usage
 
-To run seir_opt2, give the name of the FOLDER containing input files:
+To run seir_opt2 or seir_QP3, give the name of the FOLDER containing input files:
 
 > python seir_opt2 input_data	
 
-This does multiple runs, one for each file in this folder. 
+This does multiple runs, one for each file in this folder. Both programs use the same input file, though not all inputs are used by QP.
 
-To run seir_QP3, give the path to the input file. To read T2.xml in the folder "input_data": 
+To run old programs, such as seir_QP2, give the path to the input file. To read T2.xml in the folder "input_data": 
 
-> python seir_QP3 input_data/T2.xml	
-
-Both programs use the same input file, though not all inputs are used by QP.
+> python seir_QP2 input_data/T2.xml	
 -----------------------------------------------------------------------------
 Outputs
 
@@ -65,7 +63,7 @@ Features not implemented
 
 Two features have not been implemented for more than 2 areas:
 
-Initial policy: For 2 areas, priority is to the first area (presumed to be the donor) until t_switch. So t_switch >= T gives priority to the donor, t_switch = 0 gives priority to the non-donor. General priority policies have not been implemented for morethan 2 areas. Instead, vaccine is allocated using p_k, which is also used to limit feasible policies:
+Initial policy: For 2 areas, priority is to the first area (presumed to be the donor) until t_switch. So t_switch >= T gives priority to the donor, t_switch = 0 gives priority to the non-donor. General priority policies have not been implemented for more than 2 areas. Instead, vaccine is allocated using p_k, which is also used to limit feasible policies:
  p_k = max prop of avail vacc used in donor area
 If p_k = 1 (the usual value, meaning no policy limit) the initial policy gives priority to donor. If p_k < 1, that proportion goes to the donor and the rest is allocated to other areas in proportion to their initial unvaccinated population S. 
 

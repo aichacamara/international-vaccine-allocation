@@ -22,7 +22,7 @@ def main():
     except:
         pass 
     fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_tsw{t_switch:03d}' #_nu{nu:3.1f} output file name uses inputs
-    sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
+    ##sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
     # Initialize state variables
     S0 = {a: 0 for a in A}
@@ -37,18 +37,17 @@ def main():
                       1 - rho_V[a]))*(rho_I_N[a]/r_I)
         EV0[a] = ((p_r*rho_V[a])/(p_r*rho_V[a] +
                         1 - rho_V[a]))*(rho_I_N[a]/r_I)
-        I0[a] = ((1 - rho_V[a])/(p_r*rho_V[a] + 1 -
-                      rho_V[a]))*(rho_I_N[a]/(r_0 + delta_r[a]))
-        IV0[a] = ((p_r*rho_V[a])/(p_r*rho_V[a] +
-                        1 - rho_V[a]))*(rho_I_N[a]/(r_0 + delta_r[a]))
+        I0[a] = ((1 - rho_V[a])/(p_r*rho_V[a] + 1 - rho_V[a]))* \
+                rho_I_N[a]/r_d[a]
+        IV0[a] = ((p_r*rho_V[a])/(p_r*rho_V[a] + 1 - rho_V[a]))* \
+                rho_I_N[a]/r_d[a]
         SV0[a] = rho_V[a]*N[a] - EV0[a] - IV0[a]
         S0[a] = N[a] - E0[a] - EV0[a] - I0[a] - IV0[a] - SV0[a]
         W0[a] = rho[a]*N[a] - SV0[a] - EV0[a] - IV0[a] - rho[a]*E0[a] - rho[a]*I0[a]
-
     # Initialize V
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
     # 2 areas: priority to area1 for t < t_switch
-    if n_a == 2:
+    if n_a == 2: ## 2
         for t in range(min(t_switch,T - T0 + 1)): # t = 0,...,t_switch-1
             V[A[0], t] = B[t]
         for t in range(t_switch, T - T0 + 1): # t = t_switch,...,T-T0. Keep V=0 for t = T-T0+1,...,T
@@ -71,7 +70,8 @@ def main():
         v = gp.Model("vaccine_opt")
         #v.Params.DualReductions = 0 ##test: to see if unbounded or infeasible
         v.Params.LogToConsole = 0 # 1: Gurobi output turned on
-        v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum. 
+        v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum.
+        #v.Params.Method = 2 # 2: barrier method, -1: default: automatic; for LP, usually concurrently runs all 3 methods 
         # LP variables are S1 for state var S, etc. All are continuous and nonnegative by default.
         S1 = v.addVars(A, range(1, T + 1), name="S1")          # t = 1, ..., T
         SV1 = v.addVars(A, range(1, T + 1), name="SV1")
@@ -88,8 +88,8 @@ def main():
         # Iteration 0. Uses t_n, alpha, V_cal from first sim, lambda_0. Updates t_n, alpha, V_cal 
         # but z[0] is NOT used in search b/c initial V may give better z[0] than z[1], giving wrong search direction for lambda
         # Define z, l (lambda); initialize l[0], l[1], l[2]
-        z = {i: 0 for i in range(iter_lmt_search + 1)}  
-        l = {i: 0 for i in range(iter_lmt_search + 1)}
+        z = {i: 0 for i in range(iter_lmt_search + 4)}  
+        l = {i: 0 for i in range(iter_lmt_search + 4)}
         l[0] = lambda_0
         l[1] = lambda_0
         l[2] = lambda_0*phi
@@ -133,53 +133,53 @@ def main():
                 x2 = x3
                 f1 = f2
                 f2 = f3
+            if i < iter_lmt_search:
+                # Phase 2: Golden ratio search on interval [a, b] with check for unimin
+                # Initialize Phase 2
+                if x1 <= x3:
+                    a = x1
+                    b = x3
+                    fa = f1
+                    fb = f3
 
-            # Phase 2: Golden ratio search on interval [a, b] with check for unimin
-            # Initialize Phase 2
-            if x1 <= x3:
-                a = x1
-                b = x3
-                fa = f1
-                fb = f3
+                if x1 > x3:
+                    a = x3
+                    b = x1
+                    fa = f3
+                    fb = f1
 
-            if x1 > x3:
-                a = x3
-                b = x1
-                fa = f3
-                fb = f1
-
-            # Two more iterations, at x and y
-            x = a + 0.618 * (b - a)  # current larger x value
-            y = b - 0.618 * (b - a)  # current smaller x value
-            iter = i = i + 1
-            l[i] = x
-            z[i] = optimize_inner(l[i], V)
-
-            fx = z[i]  # f(x)
-            iter = i = i + 1
-            l[i] = y
-            z[i] = optimize_inner(l[i], V)
-            fy = z[i]  # f(y)
-
-            # Phase 2 loop
-            while (abs(fx - fy) > delta and i < iter_lmt_search):
+                # Two more iterations, at x and y
+                x = a + 0.618 * (b - a)  # current larger x value
+                y = b - 0.618 * (b - a)  # current smaller x value
                 iter = i = i + 1
-                if fx > fy:        		    # minimum is in [a,x], so update b
-                    b, fb, x, fx = (x, fx, y, fy)
-                    y = b - 0.618 * (b - a)
-                    l[i] = y
-                    z[i] = optimize_inner(l[i], V)
-                    fy = z[i]
-                else:	                    # minimum is in [y,b], so update a
-                    a, fa, y, fy = (y, fy, x, fx)
-                    x = a + 0.618 * (b - a)
-                    l[i] = x
-                    z[i] = optimize_inner(l[i], V)
-                    fx = z[i]
-                if (fy < fx and fx > fb):
-                    print("Warning: f is not unimin: y < fx and fx > fb")
-                if (fy > fx and fa < fy):
-                    print("Warning: f is not unimin: fy > fx and fa < fy")
+                l[i] = x
+                z[i] = optimize_inner(l[i], V)
+
+                fx = z[i]  # f(x)
+                iter = i = i + 1
+                l[i] = y
+                z[i] = optimize_inner(l[i], V)
+                fy = z[i]  # f(y)
+
+                # Phase 2 loop
+                while (abs(fx - fy) > delta and i < iter_lmt_search):
+                    iter = i = i + 1
+                    if fx > fy:        		    # minimum is in [a,x], so update b
+                        b, fb, x, fx = (x, fx, y, fy)
+                        y = b - 0.618 * (b - a)
+                        l[i] = y
+                        z[i] = optimize_inner(l[i], V)
+                        fy = z[i]
+                    else:	                    # minimum is in [y,b], so update a
+                        a, fa, y, fy = (y, fy, x, fx)
+                        x = a + 0.618 * (b - a)
+                        l[i] = x
+                        z[i] = optimize_inner(l[i], V)
+                        fx = z[i]
+                    if (fy < fx and fx > fb):
+                        print("Warning: f is not unimin: y < fx and fx > fb")
+                    if (fy > fx and fa < fy):
+                        print("Warning: f is not unimin: fy > fx and fa < fy")
         print("LP count: ", LP_count, "Infeas count: ", infeas_count)
 
         # Write the csv (optimize)
@@ -218,13 +218,15 @@ def main():
             fn.write("Mortality p_D: " + str(p_D) + "  p_V_D: " + str(p_V_D) \
                 + "  Vacc effectiveness p_e: " + str(p_e) + "  p_r: " + str(p_r) +"\n")
             fn.write("Rates r_I: " + str(r_I) + "  r_0: " + str(r_0) + "  a_0: " + str(a_0) + "  delta_a: " + str(delta_a) + "\n")
+            if g[donor] < 1: 
+                fn.write("Behavior dynamics with  v_u: " + str(v_u[donor]) + "\n")
             fn.write("gamma by area: ") 
             for a in A:
                 fn.write(str(gamma[a]) + "  ")
             fn.write("\n")
             fn.write("Lambda Converg. lambda: " + str(lambda_0) + "  phi: " + str(phi) + "  dT: " + str(dT) + \
                     "  delta: " + str(delta) + "  iter_search: " + str(iter_lmt_search) + "\n")
-            fn.write("LP Converg. delta_I: " + str(delta_I) + "  beta: " + str(beta) + "  iter: " + str(iter_lmt) + "\n\n")
+            fn.write("LP Converg. epsilon: " + str(epsilon_0) + "  delta_I: " + str(delta_I) + "  beta: " + str(beta) + "  iter: " + str(iter_lmt) + "\n\n")
             # Verbosity 0
             fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")        
 
@@ -271,11 +273,11 @@ def main():
      
             # Verbosity 2
             if verbosity >= 2:
-                fn.write("Outer Loop at last lambda. j_min = iter of inner loop that achieves best zNLP\n")
-                fn.write("iter   lambda j_min wtd deaths subopt   t_n\n")
+                fn.write("Outer Loop over lambda. j_min = iter of inner loop that achieves best zNLP\n")
+                fn.write("iter   lambda j_min wtd deaths subopt\n")
                 
                 for i in range(iter+1):
-                    fn.write(f'{i: ^{2}}  {l[i]: 9.4f}  {j_min[i]: ^2} {z[i]: 8.2f} {z[i] - z_opt: 9.2f} {t_n[i]: 6.2f} ')
+                    fn.write(f'{i: ^{2}}  {l[i]: 9.4f}  {j_min[i]: ^2} {z[i]: 8.2f} {z[i] - z_opt: 9.2f} ') # {t_n[i]: 6.2f} t_n is for inner loop
                     fn.write("\n")
                 fn.write("\n")
 
@@ -330,7 +332,7 @@ def optimize_inner(l, V):
     if iter == 0:
         LP_count = infeas_count = 0
         # Define arrays
-        j_min = {i: 0 for i in range(iter_lmt_search + 1)} # iter j of inner loop that achieves best zNLP 
+        j_min = {i: 0 for i in range(iter_lmt_search + 4)} # iter j of inner loop that achieves best zNLP 
         deaths = {j1: 0 for j1 in range(iter_lmt + 1)} # wtd deaths, iteration j of inner loop
         donor_deaths = {j1: 0 for j1 in range(iter_lmt + 1)} # donor deaths ...
         tot_deaths = {j1: 0 for j1 in range(iter_lmt + 1)} # total deaths
@@ -358,9 +360,14 @@ def optimize_inner(l, V):
         donor_deaths_sim = donor_deaths[0]
         tot_deaths_sim = tot_deaths[0]
         t_sim = t_n[0]
-        # Initialize min solution from this sim (needed for solve_LP)
+        # Initialize min from this sim (needed for solve_LP)
+#        deaths_min = deaths[0]
+#        donor_deaths_min = donor_deaths[0]
+#        tot_deaths_min = tot_deaths[0]
+        t_min = t_n[0] # was t_opt = ... corrected ??
         alpha_min = alpha
         V_cal_min = V_cal
+
         # Initialize opt from this sim
         z_init_sim = deaths[0]
         z_opt = deaths[0]
@@ -430,8 +437,8 @@ def optimize_inner(l, V):
                 for t in range(T):
                     V_tot[a, j] += V[a, t] 
             zNLP[j] = deaths[j] + l*sum(I1[a, t].x for a in A_D for t in range(1, t_LP + 1)) \
-                - (1e-7)*sum(V1[a, t].x for a in A for t in range(T)) # A_D: no donor in Lagr
-
+                - (1e-9)*sum(V1[a, t].x*(T-t) for a in A for t in range(T)) # A_D: no donor in Lagr
+            #print("inner loop j= ", j, " deaths[j] = ", deaths[j], " zNLP[j] = ", zNLP[j], " zNLP_min = ", zNLP_min) #behavior test
             if zNLP[j] <= zNLP_min:  # update best deaths, obj, vacc, alpha, t_n, V_cal for this lambda
                 j_min[iter] = j
                 deaths_min = deaths[j]
@@ -478,8 +485,21 @@ def optimize_inner(l, V):
     return deaths_min
 
 def solve_LP(l, t_LP, alpha, V_cal, eps):
-    global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v #H1
-
+    global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
+    '''    ##Check V_cal
+    V_cal_max = -1e25
+    V_cal_min = 1e25 
+    for t in range(1, T+1):
+        for a in A:     
+            if V_cal[a, t] > V_cal_max:  #V_cal_max = max(V_cal_max, V_cal[a, t])
+                V_cal_max = V_cal[a, t]
+                a_maxV = a
+                t_maxV = t
+            if V_cal[a, t] < V_cal_min:  #V_cal_min = min(V_cal_min, V_cal[a, t])
+                V_cal_min = V_cal[a, t]
+                a_minV = a
+                t_minV = t 
+    print("LP-count: ", LP_count, "  V_cal_min: ",  V_cal_min, " at a, t  ", a_minV, t_minV, "  V_cal_max: ",  V_cal_max, " at a, t  ", a_maxV, t_maxV) '''
     # Warm start using bases (can also use solution)
     if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
         vbas = {i: v.getVars()[i].VBasis for i in range(v.NumVars)} # Save basis for variables
@@ -489,7 +509,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
 
     # Objective changes with lambda (outer loop) and tn (inner loop)
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
-        - (1e-7)*sum(V1[a, t] for a in A for t in range(T)), GRB.MINIMIZE)  
+        - (1e-9)*sum(V1[a, t]*(T - t) for a in A for t in range(T)), GRB.MINIMIZE)  
     
     # Some constraints change with alpha, V_cal (inner loop). Rewrite them all.
     if LP_count - infeas_count > 1:
@@ -550,10 +570,12 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
                   for a in A), "R_t=0")
 
     # Regularization constraints on V_cal: constant in t
-    v.addConstrs((I1[a, t] + p_e*IV1[a, t] <= V_cal[a, t] + eps #*(t/T) ##*(t/T)
-                 for a in A for t in range(1, T + 1)), "V_cal_upper_bd")
-    v.addConstrs((I1[a, t] + p_e*IV1[a, t] >= max(V_cal[a, t] - eps, 0) #*(t/T) ##*(t/T)
-                 for a in A for t in range(1, T + 1)), "V_cal_lower_bd")
+    ##v.addConstrs((I1[a, t] + p_e*IV1[a, t] <= V_cal[a, t] + eps #*(t/T) ##*(t/T)
+    v.addConstrs((G[a, t]*I1[a, t] + G[a, t]*p_e*IV1[a, t] <= V_cal[a, t] + eps #*(t/T) ##*(t/T) #Behavior: V_cal = G*(I + p_eIV)
+                 for a in A for t in range(1, T)), "V_cal_upper_bd")
+    ##v.addConstrs((I1[a, t] + p_e*IV1[a, t] >= max(V_cal[a, t] - eps, 0) #*(t/T) ##*(t/T) 
+    v.addConstrs((G[a, t]*I1[a, t] + G[a, t]*p_e*IV1[a, t] >=  max(V_cal[a, t] - eps, 0) ##V_cal[a, t] - eps #*(t/T) ##*(t/T) #Behavior
+                 for a in A for t in range(1, T)), "V_cal_lower_bd")
 
     if LP_count -infeas_count > 1: # Warm start using VBasis/CBasis if v.status == GRB.OPTIMAL: #
         v.update() # Must update to refer to new constraints
@@ -577,7 +599,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         return 100000000
 
 def simulate(V):
-    global I, I_V
+    global I, I_V, G # Behavior
     # Define state variables, alpha, delta_E, V_star, V_plus
     S = {(a, t): 0 for a in A for t in range(T+1)}     # t=0,...,T b/c computed in diff eq
     S_V = {(a, t): 0 for a in A for t in range(T+1)}
@@ -590,6 +612,7 @@ def simulate(V):
     D = {(a, t): 0 for a in A for t in range(T+1)}
     W = {(a, t): 0 for a in A for t in range(T+1)}
     V_cal = {(a, t): 0 for a in A for t in range(T+1)}  # t=0,...,T b/c used in output
+    G = {(a, t): 0 for a in A for t in range(T+1)}      # Behavior
     alpha = {(a, t): 0 for a in A for t in range(T)}    #  t=0,...,T-1 b/c not computed in diff eq
     delta_E = {(a, t): 0 for a in A for t in range(T)}
     V_star = {(a, t): 0 for a in A for t in range(T)}
@@ -627,8 +650,14 @@ def simulate(V):
                 alpha[a, t] = alpha_0[a]
 
         # Compute V_cal, delta_E, and V_star (w/o realloc)
-        for a in A:
+        for a in A:                                 
             V_cal[a, t] = I[a, t] + p_e*I_V[a, t]
+            G[a, t] = 1                             # Behavior...
+            if V_cal[a, t] > N[a]*v_l[a]:
+               G[a, t] = 1 - (1 - g[a])/(v_u[a] - v_l[a])*(V_cal[a, t] - N[a]*v_l[a])/N[a]
+            if V_cal[a, t] > N[a]*v_u[a]:
+                G[a, t] = g[a]
+            V_cal[a, t] *= G[a, t] 
             delta_E[a, t] = min(S[a, t], alpha[a, t]*S[a, t]*V_cal[a, t]/N[a])
             if S[a, t] < 0.0000001:
                 V_star[a, t] = min(W[a, t], V[a, t])
@@ -643,6 +672,7 @@ def simulate(V):
             else:
                 Wnew = W[A[0], t] - W[A[0], t]*delta_E[A[0], t]/S[A[0], t]
             V_star[A[0], t] = min(Wnew, V[A[0], t] + V[A[1], t] - V_star[A[1], t]) # add avail realloc from A[1]
+#            V_star[A[0], t] = min(Wnew, B[t] - V_star[A[1], t]) # Remove slack: realloc to 0
             # area[1]
             if S[A[1], t] < 0.0000001:
                 Wnew = W[A[1], t]
@@ -682,6 +712,9 @@ def simulate(V):
                 if a != donor: ## donor doesn't contribute to variant
                     for t1 in range(t+1): # t1=0,...,t 
                         I_sum += I[a, t1]    # sum all infected up to current time
+                ## donor contribute to variant: replaces "if a != donor"
+#               for t1 in range(t+1): # t1=0,...,t 
+#                   I_sum += I[a, t1]    # sum all infected up to current time
             # If this sum > n, variant emerges. Compute t_sim
             if I_sum > n:
                 variant_emerge = True
@@ -693,6 +726,12 @@ def simulate(V):
     # Compute V_cal at T (used in LP and opt output)
     for a in A:
         V_cal[a, T] = I[a, T] + p_e*I_V[a, T]
+        G[a, T] = 1                          # Behavior...
+        if V_cal[a, T] > N[a]*v_l[a]:
+            G[a, T] = 1 - (1 - g[a])/(v_u[a] - v_l[a])*(V_cal[a, T] - N[a]*v_l[a])/N[a]
+        if V_cal[a, T] > N[a]*v_u[a]:
+            G[a, T] = g[a]
+        V_cal[a, T] *= G[a, T]               
 
     if simulate_only:
         # Write the csv (simulate)
@@ -717,7 +756,8 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
 
     # read area data
     area_data = root.find("area_data")
-    global A, A_D, N, rho_V, rho_I_N, delta_r, gamma, rho, donor, m, n, n_a
+    global A, A_D, N, rho_V, rho_I_N, delta_r, gamma, rho, donor, m, n, n_a, \
+            v_l, v_u, g # Behavior dynamics
     A = []
     A_D = [] # areas except donor
     N = {}
@@ -741,9 +781,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         gamma[area] = convert_num(child.find("gamma").text)
         rho[area] = convert_num(child.find("rho").text)
     n_a = len(A)
+
     # read scenario data
     scenario_data = root.find("scenario_data")
-    global r_I, r_0, p_D, p_V_D, a_0, delta_a, p_e, p_r, \
+    global r_I, r_0, p_D, p_V_D, a_0, delta_a, v_l, v_u, g, p_e, p_r, \
         L, T_D, p, T, B_0, b_arr  #p_H, p_V_H,
     r_I = convert_num(scenario_data.find("r_I").text)
     r_0 = convert_num(scenario_data.find("r_0").text)
@@ -751,6 +792,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     p_V_D = convert_num(scenario_data.find("p_V_D").text)
     a_0 = convert_num(scenario_data.find("a_0").text)
     delta_a = convert_num(scenario_data.find("delta_a").text)
+    v_u= convert_num(scenario_data.find("v_u").text)
     p_e = convert_num(scenario_data.find("p_e").text)
     p_r = convert_num(scenario_data.find("p_r").text)
     L = convert_num(scenario_data.find("L").text)
@@ -765,6 +807,21 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
             b_arr[i] = convert_num(b_arr[i])
     else:
         b_arr = []
+    # Behavior dynamics hardcoded, using input v_u
+    v_input = v_u
+    v_l = {} 
+    v_u = {}
+    g = {}
+    if v_input == 0: # no behavior
+        for a in A:
+            v_l[a] = 0
+            v_u[a] = 1 
+            g[a] = 1 
+    else:           # linear behavior
+        for a in A:
+            v_l[a] = 0
+            v_u[a] = v_input 
+            g[a] = 0    
 
     # read params
     params = root.find("params")
