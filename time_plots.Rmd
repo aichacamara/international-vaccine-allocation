@@ -3,16 +3,14 @@ title: "SEIR OPT simulation time plot"
 author: Mike Veatch
 ---
 
-```{r plot by MV}
+```{r plot}
 
 library(tidyverse)
 library(tidyr)
 library(dplyr)
 
-sim1 = read.csv("~/research/vaccine/code/output/plot_T2.4.csv")
-#          sep = "", header = T)
-# rename to std name if opened from Import tab
-# sim1 = plot_T2.3
+sim1 = read.csv("~/research/vaccine/code/output/C2.3_tsw180_plot.csv")
+# rename to sim1 if opened from Import tab
 
 t_n = sim1$t_n[1] # read data from row 1
 L = sim1$L[1]
@@ -29,77 +27,121 @@ sim |>
   mutate(Vaccinations = cumsum(V)) |>
   ungroup() |>
   # Put all measurements in one column (including the computed ones)
-  pivot_longer(cols = S:Vaccinations, names_to = "state", values_to = "value") ->
+  pivot_longer(cols = S:Vaccinations, names_to = "key", values_to = "value") ->
   sim_long
 
 # Rename variables
-sim_long$state = recode(sim_long$state, "H" = "Hospitalized", "R"="Recovered", "D" = "Deaths", "S" = "Susceptible")
+sim_long$key = recode(sim_long$key, "H" = "Hospitalized", "R"="Recovered", 
+                 "D" = "Deaths", "S" = "Susceptible", "SV" = "Susceptible(V)")
 
 # vertical line at t_n + L for area1, t_n for others
 variant <- data.frame(a = areas, t_variant = c(t_n + L, t_n))
 
+  ### Select variables for first plot ###
+
 sim_long |>
-  # Select variables for plotting
-  filter(state == "Infectious" | state == "Deaths" | state == "Cases" ) |> ## 
-       ##  | state == "Vaccinations" | state == "Susceptible") |>
+filter(key == "Cases" | key == "Vaccinations" | key == "Susceptible" | key == "Susceptible(V)") |>
   ggplot(mapping = aes(x = t, y = value)) +
-  geom_line(mapping = aes(color = state),  size = 1) +
-  # vertical line at t_n + L for area1, t_n for others
+  geom_line(mapping = aes(color = key, shape = key),  size = 1) +
   geom_vline(aes(xintercept = t_variant), variant, linetype = 5, size = 0.75) +
-  #geom_vline(xintercept = t_n + L*(sim_long$area == "area1"), 
-  #           linetype = 5, size = 0.75) +
-  # faceting by area - number of columns set to 1
-  facet_wrap(~area, ncol = 1, scales = "free") +
+  facet_wrap(~area, ncol = 1, scales = "free") +    # faceting by area - number of columns set to 1
   xlab("days") +
   ylab("number of people") +
-  # x-axis tick mark spacing
-  scale_x_continuous(breaks=seq(0,max(sim_long$t),10)) + # space by 10
-  #scale_x_continuous(breaks = unique(sim_long$t)) +     # another way to space by 1
-  # a simple theme to replicate the appearance of Abe's plot
+  scale_x_continuous(breaks=seq(0,max(sim_long$t),10)) + # x-axis tick mark space by 10
   theme_bw()
 
-```
-
-```{r plot2 by MV}
-# Graph area1 with vertical line at t_N + L
-sim_long |>
-  filter(state == "Infectious" | state == "Deaths" | state == "Cases" | state == "Recovered"
-         | state == "Vaccinations") |>
-  filter(area == "area1") |>
-  ggplot(mapping = aes(x = t, y = value)) +
-  geom_line(mapping = aes(color = state),  size = 1) +
-  # vertical line at t_n + L
-  geom_vline(xintercept = t_n + L, linetype = 5, size = 0.75) +
-  scale_x_continuous(breaks=seq(0,max(sim_long$t),10)) + # space by 10
-  theme_bw()
-```
-
-```{r plot from sam}
-sim |>
-  group_by(area) |>
-  mutate(V_cum = cumsum(V)) |>
-  ungroup() |>
-  pivot_longer(cols = S:V_cum, names_to = "state", values_to = "value") ->
-  sim_long
+ ### Select variables for second plot ###
 
 sim_long |>
-  filter(state != "V_cum") |>
+filter(key == "Infectious" | key == "Deaths" ) |> 
   ggplot(mapping = aes(x = t, y = value)) +
-  geom_line(mapping = aes(color = state),
-            size = 1) +
-  geom_line(data = filter(sim_long, state == "V_cum"),
-            color = "black", size = 0.5) +
-  geom_vline(xintercept = t_n, linetype = 3) +
-  facet_wrap(~area) +
-  scale_x_continuous(breaks = unique(sim_long$t)) +
+  geom_line(mapping = aes(color = key, shape = key),  size = 1) +
+  geom_vline(aes(xintercept = t_variant), variant, linetype = 5, size = 0.75) +
+  facet_wrap(~area, ncol = 1, scales = "free") +   # faceting by area - number of columns set to 1
+  xlab("days") +
+  ylab("number of people") +
+  scale_x_continuous(breaks=seq(0,max(sim_long$t),10)) + # x-axis tick mark space by 10
   theme_bw()
+
 ```
 
+```{r}
+library(patchwork)
 
-```{r old}
+states <- c("Cases", "Susceptible", "Susceptible(V)", "Vaccinations", "Deaths", "Infectious")
 
-#sim_wide = pivot_wider(data = sim,
-#    names_from = area,
-#    values_from = c(3:13))
+sim_points_col1 <- sim_long |> 
+  filter(t %in% seq(0, 180, 20),
+         key %in% states[1:4]) |>
+  mutate(key = factor(key, levels = states))
+
+# Creating the faceted plot that will become the left column of the final
+# four-panel plot
+
+col1 <- sim_long |>
+  filter(key %in% states[1:4]) |>
+  mutate(key = factor(key, levels = states)) |>
+  ggplot(mapping = aes(x = t, y = value, color = key, shape = key)) +
+  geom_line(linewidth = 0.7) +                                                      # line width
+  geom_point(data = sim_points_col1) +                                              # separate dataset for points
+  geom_vline(aes(xintercept = t_variant), variant, linetype = 5, size = 0.75) +     # vertical lines
+  facet_wrap(~area, ncol = 1, scales = "free_y") +                                  
+  labs(x = "days", y = "number of people", color = NULL, shape = NULL) +            # x and y label text
+  scale_x_continuous(breaks=seq(0, max(sim_long$t), 20),                            # x-axis breaks 
+                     expand = c(0, 0)) +                                            # pixel expansion at x-axis limits
+  scale_color_manual(values = c("#1C9E77", "#D96002", "#746FB3", "#E72B8A")) +      # manual colors for first column of plot
+  scale_shape_manual(values = c(15, 16, 4, 17)) +                                   # manual shapes for first column of plot
+  theme(plot.margin = margin(t = 5, r = 10, b = 3, l = 3),                          # margins (in pixels) surrounding plot
+        panel.background = element_blank(),                                         # plot background set to empty
+        panel.border = element_rect(fill = NA, color = "black"),                    # plot border set to black
+        panel.grid.major = element_line(color = "gray", linewidth = 0.2),           # major grid lines color and width
+        panel.grid.minor = element_line(color = "lightgray", linewidth = 0.1),      # minor grid lines color and width
+        strip.background = element_blank(),                                         # facet label background empty
+        strip.text = element_blank(),                                               # facet label text empty
+        legend.position = "bottom",                                                 # legend position 
+        legend.text = element_text(size = 7),                                       # legend font size
+        legend.key = element_blank(),                                               # legend symbol background empty
+        legend.background = element_rect(fill = NA, color = "black", linewidth = 0.3)) + #size = 0.3)) + 
+                                                                                    # legend border set to black
+  guides(color = guide_legend(nrow = 1))                                            # legend items in single row
+
+sim_points_col2 <- sim_long |> 
+  filter(t %in% seq(0, 180, 20),
+         key %in% states[5:6]) |>
+  mutate(key = factor(key, levels = states))
+
+# Creating the faceted plot that will become the right column of the final
+# four-panel plot
+
+col2 <- sim_long |>
+  filter(key %in% states[5:6]) |>
+  mutate(key = factor(key, levels = states)) |>
+  ggplot(mapping = aes(x = t, y = value, color = key, shape = key)) +
+  geom_line(size = 0.7) +
+  geom_point(data = sim_points_col2) +
+  geom_vline(aes(xintercept = t_variant), variant, linetype = 5, size = 0.75) +
+  facet_wrap(~area, ncol = 1, scales = "free_y", strip.position = "right") +      # include "area" strip label on right
+  labs(x = "days", y = NULL, color = NULL, shape = NULL) +
+  scale_x_continuous(breaks=seq(0, max(sim_long$t), 20),
+                     expand = c(0, 0)) +
+  scale_color_manual(values = c("#67A61E", "#E7AB02")) +
+  scale_shape_manual(values = c(18, 8)) +
+  theme(plot.margin = margin(t = 5, r = 10, b = 3, l = 3),
+        panel.background = element_blank(),
+        panel.border = element_rect(fill = NA, color = "black"),
+        panel.grid.major = element_line(color = "gray", linewidth = 0.2),
+        panel.grid.minor = element_line(color = "lightgray", linewidth = 0.1),
+        legend.position = "bottom",
+        legend.text = element_text(size = 7),
+        legend.key = element_blank(),
+        legend.background = element_rect(fill = NA, color = "black", linewidth = 0.3)) + #size = 0.3)) +
+  guides(color = guide_legend(nrow = 1))
+
+# Using {patchwork} syntax to combine both plots side by side
+
+col1 + col2 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+# Output to high-resolution .png. Edit height and width arguments to change aspect
+
+ggsave("time_plot_labels.png", width = 6.4, height = 4, dpi = 600)
 ```
-
