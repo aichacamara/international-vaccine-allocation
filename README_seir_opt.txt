@@ -4,15 +4,12 @@ Versions
 
 seir_opt2.py	optimizes using iterative LPs or simulates
 
-seirQP2.py	
-optimizes using QP (at each lambda) or simulates. Has Susan's changes: 
+seirQP3.py	
+optimizes using QP (at each lambda) or simulates. 
+Recent changes: 
   MIPgap=.02
   time limit=600s for each QP
-  record results of QP if status == GRB.TIME_LIMIT 
-***This version can be deleted if it doesn't have other changes
-
-seirQP3.py	
-This version has Susan's changes, plus 
+  record results of QP if status == GRB.TIME_LIMIT  
   clarified output: suboptimal QP results are counted if time limit reached,
 	removed unused column
   console output is redirected to output file ..._con.out using sys.stdout
@@ -37,9 +34,9 @@ Outputs
 
 The subfolder "output" is created. For each input file, seir_opt2 writes three files with names, e.g.,
 
-  T2_T090_nu0.0.out		output
-  T2_T090_nu0.0_con.out		console output, i.e., Gurobi
-  T2_T090_nu0.0_plot.csv	csv file for time plots with R
+  C2.3_tsw180.out		output
+  C2.3_tsw180_con.out		console output, i.e., Gurobi
+  C2.3_tsw180_plot.csv		csv file for time plots with R
 
 seir_QP3 appends "_QP" to the names.
 To direct Gurobi output to console, remove "sys.stdout = ..."
