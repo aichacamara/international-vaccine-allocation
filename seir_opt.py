@@ -313,16 +313,44 @@ def main():
                     fn.write("\n")
 
     else: # Simulate only
-        t_sim, alpha, V_cal, V, D = simulate(V)
-    """ Output not finished. wtd deaths, vacc by area from this sim 
-        deaths = (1 - nu)*D[donor, T] 
-        for a in A:
-            deaths += nu*D[a, T]
-        donor_deaths = D[donor, T]
-        total_deaths = 0
-        for a in A:
-            total_deaths += D[a, T]
-        V_opt = {(a, t): (V[a, t] if t < T else 0) for a in A for t in range(T+1)} """
+        with open(fn_base + ".out", "w") as fn: # Write output file (simulate)
+            fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
+            ## input echo TBD
+            fn.write("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
+            for a1 in A: 
+                # Initialize V giving priority to area a1
+                V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
+                for t in range(T - T0 + 1): # t=0,...,T-T0+1
+                    V[a1, t] = B[t]
+                # Simulate   
+                t_sim, alpha, V_cal, V, D = simulate(V)
+                deaths = (1 - nu)*D[donor, T] 
+                for a in A:
+                    deaths += nu*D[a, T]
+                donor_deaths = D[donor, T]
+                tot_deaths = 0
+                for a in A:
+                    tot_deaths += D[a, T]
+                V_opt = {(a, t): (V[a, t] if t < T else 0) for a in A for t in range(T+1)} 
+                # Compute total vacc by area
+                V_total = {a: 0 for a in A} 
+                for a in A:
+                    for t in range(T):
+                        V_total[a] += V_opt[a, t]
+
+                fn.write(f'{a1: ^{9}}  {deaths: 8.2f}  {donor_deaths: 8.2f}  {tot_deaths: 12.2f}  {t_sim: 6.2f} ')
+                for a in A:
+                    fn.write(f'{V_total[a]: 5.0f} ')                    
+                fn.write("\n\n")
+            # Verbosity 1
+            if verbosity >= 1:
+                fn.write("Vaccinations \n"
+                        "  day    V by area \n")
+                for t in range(T - T0 + 1):
+                    fn.write(f'{t: ^{7}}')
+                    for a in A:
+                        fn.write("  " + str(V_opt[a, t]) + "  ")
+                    fn.write("\n")
 
 def optimize_inner(l, V): 
     global deaths, donor_deaths, tot_deaths, t_n, zLP, zNLP, j_min, V_tot, \
