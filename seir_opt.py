@@ -13,7 +13,8 @@ import sys
 def main():
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, iter, V_opt, \
         z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase, fn_base #H1,
-
+    global sim_count ##test
+    sim_count = 0
     # read input file, compute k and B
     import_xml(xml_path=os.getcwd() + "/" + input_file)
     # initialize output filename and directory
@@ -324,13 +325,13 @@ def main():
                     V[a1, t] = B[t]
                 # Simulate   
                 t_sim, alpha, V_cal, V, D = simulate(V)
-                deaths = (1 - nu)*D[donor, T] 
+                deaths_sim_only = (1 - nu)*D[donor, T] 
                 for a in A:
-                    deaths += nu*D[a, T]
-                donor_deaths = D[donor, T]
-                tot_deaths = 0
+                    deaths_sim_only += nu*D[a, T]
+                donor_deaths_sim_only = D[donor, T]
+                tot_deaths_sim_only = 0
                 for a in A:
-                    tot_deaths += D[a, T]
+                    tot_deaths_sim_only += D[a, T]
                 V_opt = {(a, t): (V[a, t] if t < T else 0) for a in A for t in range(T+1)} 
                 # Compute total vacc by area
                 V_total = {a: 0 for a in A} 
@@ -338,7 +339,7 @@ def main():
                     for t in range(T):
                         V_total[a] += V_opt[a, t]
 
-                fn.write(f'{a1: ^{9}}  {deaths: 8.2f}  {donor_deaths: 8.2f}  {tot_deaths: 12.2f}  {t_sim: 6.2f} ')
+                fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
                 for a in A:
                     fn.write(f'{V_total[a]: 5.0f} ')                    
                 fn.write("\n\n")
@@ -630,8 +631,8 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         return 100000000
 
 def simulate(V):
-    global I, I_V, G # Behavior
-    # Define state variables, alpha, delta_E, V_star, V_plus
+    global I, I_V, G # G: Behavior
+    # Define state variables, alpha, delta_E, V_star, V_minus
     S = {(a, t): 0 for a in A for t in range(T+1)}     # t=0,...,T b/c computed in diff eq
     S_V = {(a, t): 0 for a in A for t in range(T+1)}
     E = {(a, t): 0 for a in A for t in range(T+1)}   
@@ -647,7 +648,7 @@ def simulate(V):
     alpha = {(a, t): 0 for a in A for t in range(T)}    #  t=0,...,T-1 b/c not computed in diff eq
     delta_E = {(a, t): 0 for a in A for t in range(T)}
     V_star = {(a, t): 0 for a in A for t in range(T)}
-    V_plus = {(a, t): 0 for a in A for t in range(T)}
+    V_minus = {a: 0 for a in A}                       # stores V_star before realloc
 
     # Assign initial states
     for a in A:
@@ -695,44 +696,36 @@ def simulate(V):
             else:
                 V_star[a, t] = min(W[a, t] - W[a, t]*delta_E[a, t]/S[a, t], V[a, t])
 
-        # Realloc: 2 areas. Recompute V_star
+        """# Realloc: 2 areas. Recompute V_star
         if n_a == 2: # old: if realloc_flag and
             # area[0]
             if S[A[0], t] < 0.0000001:
                 Wnew = W[A[0], t]
             else:
                 Wnew = W[A[0], t] - W[A[0], t]*delta_E[A[0], t]/S[A[0], t]
-#            V_star[A[0], t] = min(Wnew, V[A[0], t] + V[A[1], t] - V_star[A[1], t]) # error. Replaced MV
-            V_star[A[0], t] += min(Wnew, V[A[1], t] - V_star[A[1], t]) # add avail realloc from A[1]
+            V_star[A[0], t] = min(Wnew, V[A[0], t] + V[A[1], t] - V_star[A[1], t]) # add avail realloc from A[1] (original version)
+#            V_star[A[0], t] += min(Wnew, V[A[1], t] - V_star[A[1], t]) # error in paper. causes negative states MV
 #            V_star[A[0], t] = min(Wnew, B[t] - V_star[A[1], t]) # Remove slack: realloc to 0
             # area[1]
             if S[A[1], t] < 0.0000001:
                 Wnew = W[A[1], t]
             else:
                 Wnew = W[A[1], t] - W[A[1], t]*delta_E[A[1], t]/S[A[1], t]
-            V_star[A[1], t] += min(Wnew, V[A[0], t] - V_star[A[0], t]) # add avail realloc from A[0]
-#            V_star[A[1], t] = min(Wnew, V[A[1], t] + V[A[0], t] - V_star[A[0], t]) # error. Replaced MV
-        # Realloc: more than 2 areas.
-        if n_a > 2:
+            V_star[A[1], t] = min(Wnew, V[A[1], t] + V[A[0], t] - V_star[A[0], t]) # add avail realloc from A[0]
+#            V_star[A[1], t] += min(Wnew, V[A[0], t] - V_star[A[0], t]) # error in paper. causes negative states MV """
+        # Realloc: any number of areas. Uses priority.
+        if n_a >= 2:
             realloc = 0 # amount avail to realloc
             for a in A:
                 realloc += V[a, t] - V_star[a, t] # unused vacc
-#            if t == 46: ## test
-#                print("t=46, realloc = ", realloc)
+                V_minus[a] = V_star[a, t] # Store vacc before realloc
             for a in priority: # loop over areas in priority order
                 if S[a, t] < 0.0000001:
-                    Wnew = W[a, t] # limit on how much can be realloc to a
+                    Wnew = W[a, t] # limit on V_star
                 else:
                     Wnew = W[a, t] - W[a, t]*delta_E[a, t]/S[a, t]
-                realloc_V = min(Wnew, realloc) # amount realloc to this area
-                V_star[a, t] += realloc_V
-                realloc -= realloc_V
-#                if t == 46: # test
-#                    print("area = ", a, "Wnew = ", Wnew, "realloc_V = ", realloc_V, "V_star = ", V_star[a, t])
-
-#        if realloc_flag and n_a > 2:
-#            print("Reaalocation for more than 2 areas not implmented")
-#            quit()  
+                V_star[a, t] = min(Wnew, V_minus[a] + realloc) # Realloc as much as allowed to this area
+                realloc -= V_star[a, t] - V_minus[a] # subtract amount realloc to this area
 
         # difference equations including W
         for a in A:
