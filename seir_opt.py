@@ -13,8 +13,7 @@ import sys
 def main():
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, iter, V_opt, \
         z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase, fn_base #H1,
-    global sim_count ##test
-    sim_count = 0
+
     # read input file, compute k and B
     import_xml(xml_path=os.getcwd() + "/" + input_file)
     # initialize output filename and directory
@@ -22,7 +21,7 @@ def main():
             os.mkdir(os.getcwd() + "/" + "output")
     except:
         pass 
-    fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_tsw{t_switch:03d}' #_nu{nu:3.1f} output file name uses inputs
+    fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_nu{nu:3.1f}' #_nu{nu:3.1f} output file name uses inputs
     ##sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
     # Initialize state variables
@@ -212,25 +211,68 @@ def main():
         #with open("./output/" +  input_file.split("/")[-1][0:-4] + ".log", "w") as fn: OLD: no param in fn
         with open(fn_base + ".out", "w") as fn:
             # input echo
-            fn.write("Optimization " + input_file + "\n\n")
-            fn.write("Time Horizon: " + str(T) +  "  nu: " + str(nu) + "\n")
-            fn.write("Donor in t_n: no\n")
-            fn.write("Improving search: " + str(improving) + "\n")
-            if n_a == 2:
-                fn.write("Initial policy priority to " + str(2 - np.sign(t_switch)) + "  t_switch: " + str(t_switch) + "\n")
-            fn.write("variant emergence n: " + str(n) + "  L: " + str(L) + "  T_D: " + str(T_D) + "\n")
-            fn.write("Mortality p_D: " + str(p_D) + "  p_V_D: " + str(p_V_D) \
-                + "  Vacc effectiveness p_e: " + str(p_e) + "  p_r: " + str(p_r) +"\n")
-            fn.write("Rates r_I: " + str(r_I) + "  r_0: " + str(r_0) + "  a_0: " + str(a_0) + "  delta_a: " + str(delta_a) + "\n")
-            if g[donor] < 1: 
-                fn.write("Behavior dynamics with  v_u: " + str(v_u[donor]) + "\n")
-            fn.write("gamma by area: ") 
-            for a in A:
-                fn.write(str(gamma[a]) + "  ")
+            fn.write("--------------------------------Area data--------------------------------" + "\n")
+            fn.write("Area name: ")
+            for name in A:
+                fn.write(name + " ")
             fn.write("\n")
-            fn.write("Lambda Converg. lambda: " + str(lambda_0) + "  phi: " + str(phi) + "  dT: " + str(dT) + \
-                    "  delta: " + str(delta) + "  iter_search: " + str(iter_lmt_search) + "\n")
-            fn.write("LP Converg. epsilon: " + str(epsilon_0) + "  delta_I: " + str(delta_I) + "  beta: " + str(beta) + "  iter: " + str(iter_lmt) + "\n\n")
+            fn.write("Gamma: ")
+            for area in A:
+                fn.write(str(gamma[area]) + " ")
+            fn.write("\n")
+            fn.write("Rho_I_N: ")
+            for area in A:
+                fn.write(str(rho_I_N[area]) + " ")
+            fn.write("\n")
+            fn.write("Rho: ")
+            for area in A:
+                fn.write(str(rho[area]) + " ")
+            fn.write("\n")
+            fn.write("Rho_V: ")
+            for area in A:
+                fn.write(str(rho_V[area]) + " ")
+            fn.write("\n")
+            fn.write("N: ")
+            for area in A:
+                fn.write(str(N[area]) + " ")
+            fn.write("\n")
+            fn.write("n: " + str(n) + "\n")
+            fn.write("------------------------------Scenario data------------------------------" + "\n")
+            fn.write("Time horizon (days): " + str(T) + "\n")
+            fn.write("Vaccine avaiable day 0: " + str(B_0) + "\n")
+            fn.write("Weight for non-donor deaths in objective: " + str(nu) + "\n")
+            fn.write("Upper limit on proportion infectious due to behavior: " + str(v_u) + "\n")
+            fn.write("Max. prop. of vaccine allocated to donor areas: " + str(p_k) + "\n")
+            fn.write("Rate out of state E into I:" + str(r_I) + "\n")
+            fn.write("Rate out of state I w/o testing: " + str(r_0) + "\n")
+            fn.write("P(death | infected, not vacc): " + str(p_D) + "\n")
+            fn.write("P(death | infected, vacc): " + str(p_V_D) + "\n")
+            fn.write("Initial infection rate: " + str(a_0) + "\n")
+            fn.write("Change in infection rate for variant: " + str(delta_a) + "\n")
+            fn.write("Prop. transmission from a vaccinated person: " + str(p_e) + "\n")
+            fn.write("Prop. transmission to a vaccinated person: " + str(p_r) + "\n")
+            fn.write("Lag for variant to reach other areas (days): " + str(L) + "\n")
+            fn.write("Time for variant to dominate (days): " + str(T_D) + "\n")
+            fn.write("Prop. of people in state I that have the new variant when introduced: " + str(p) + "\n")
+    
+            fn.write("-------------------------------Parameters--------------------------------" + "\n")
+            fn.write("Simulate only: " + str(simulate_only) + "\n")
+            fn.write("Priority (decreasing): ")
+            for a1 in range(len(priority)): 
+                fn.write(str(priority[a1]) + " ")
+            fn.write("\n")
+            fn.write("Lagrange multiplier for infection: " + str(lambda_0) + "\n")
+            fn.write("Exploration multiplier for lambda: " + str(phi) + "\n")
+            fn.write("Exploration tolerance for LP: " + str(epsilon_0) + "\n")
+            fn.write("Termination tolerance for LP: " + str(delta_I) + "\n")
+            fn.write("Termination tolerance for lambda: " + str(delta) + "\n")
+            fn.write("Exploration convergence parameter for LP: " + str(beta) + "\n")
+            fn.write("Iteration limit for LP: " + str(iter_lmt) + "\n")
+            fn.write("Iteration limit for lambda: " + str(iter_lmt_search) + "\n")
+            fn.write("Days after t_n[0] in Lagrangian: " + str(dT) + "\n")
+            fn.write("Verbosity: " + str(verbosity) + "\n")
+            fn.write("-------------------------------------------------------------------------" + "\n")
+
             # Verbosity 0
             fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")        
 
@@ -342,10 +384,10 @@ def main():
                 fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
                 for a in A:
                     fn.write(f'{V_total[a]: 5.0f} ')                    
-                fn.write("\n\n")
+                fn.write("\n")
             # Verbosity 1
             if verbosity >= 1:
-                fn.write("Vaccinations \n"
+                fn.write("\nVaccinations \n"
                         "  day    V by area \n")
                 for t in range(T - T0 + 1):
                     fn.write(f'{t: ^{7}}')
@@ -725,7 +767,7 @@ def simulate(V):
                 else:
                     Wnew = W[a, t] - W[a, t]*delta_E[a, t]/S[a, t]
                 V_star[a, t] = min(Wnew, V_minus[a] + realloc) # Realloc as much as allowed to this area
-                realloc -= V_star[a, t] - V_minus[a] # subtract amount realloc to this area
+                realloc -= V_star[a, t] - V_minus[a] # subtract amount realloc to this area 
 
         # difference equations including W
         for a in A:
@@ -797,18 +839,27 @@ def simulate(V):
 def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to the XML file
     root = ET.parse(xml_path).getroot()
 
-    # read area data
     area_data = root.find("area_data")
-    global A, A_D, priority, N, rho_V, rho_I_N, delta_r, gamma, rho, donor, m, n, n_a, \
-            v_l, v_u, g # Behavior dynamics
+    scenario_data = root.find("scenario_data")
+    params = root.find("params")
+
+    # read area data
+    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, donor, m, n, n_a
     A = []
     A_D = [] # areas except donor
-    N = {}
-    rho_V = {}
-    rho_I_N = {}
-    delta_r = {}
     gamma = {}
+    rho_I_N = {}
     rho = {}
+    rho_V = {}
+    delta_r = {}
+    N = {}
+
+    priority = area_data.find("priority").text
+    if not priority == None:
+        priority = priority.split(sep=",")
+    else:
+        priority = []
+
     donor = area_data.find("donor").text
     m = area_data.find("m").text
     n = convert_num(area_data.find("n").text)
@@ -817,34 +868,34 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         A.append(area)
         if area != donor:
             A_D.append(area)
-        N[area] = convert_num(child.find("N").text)
-        rho_V[area] = convert_num(child.find("rho_V").text)
-        rho_I_N[area] = convert_num(child.find("rho_I_N").text)
-        delta_r[area] = convert_num(child.find("delta_r").text)
         gamma[area] = convert_num(child.find("gamma").text)
+        rho_I_N[area] = convert_num(child.find("rho_I_N").text)
         rho[area] = convert_num(child.find("rho").text)
+        rho_V[area] = convert_num(child.find("rho_V").text)
+        delta_r[area] = convert_num(child.find("delta_r").text)
+        N[area] = convert_num(child.find("N").text)
     n_a = len(A)
-    priority = A
 
     # read scenario data
-    scenario_data = root.find("scenario_data")
-    global r_I, r_0, p_D, p_V_D, a_0, delta_a, v_l, v_u, g, p_e, p_r, \
-        L, T_D, p, T, B_0, b_arr  #p_H, p_V_H,
-    r_I = convert_num(scenario_data.find("r_I").text)
+    global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
+        p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
+    T = convert_num(scenario_data.find("T").text)
+    B_0 = convert_num(scenario_data.find("B_0").text) 
+    nu = convert_num(scenario_data.find("nu").text)
+    p_k = convert_num(scenario_data.find("p_k").text)
+    r_I = convert_num(scenario_data.find("r_I").text) 
     r_0 = convert_num(scenario_data.find("r_0").text)
     p_D = convert_num(scenario_data.find("p_D").text)
     p_V_D = convert_num(scenario_data.find("p_V_D").text)
     a_0 = convert_num(scenario_data.find("a_0").text)
     delta_a = convert_num(scenario_data.find("delta_a").text)
-    v_u= convert_num(scenario_data.find("v_u").text)
     p_e = convert_num(scenario_data.find("p_e").text)
     p_r = convert_num(scenario_data.find("p_r").text)
     L = convert_num(scenario_data.find("L").text)
     T_D = convert_num(scenario_data.find("T_D").text)
     p = convert_num(scenario_data.find("p").text)
-    T = convert_num(scenario_data.find("T").text)
-    B_0 = convert_num(scenario_data.find("B_0").text)
     b_arr = scenario_data.find("b").text
+    v_u= convert_num(scenario_data.find("v_u").text) 
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
         for i in range(len(b_arr)):
@@ -868,19 +919,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
             g[a] = 0    
 
     # read params
-    params = root.find("params")
-    global verbosity, simulate_only, improving, realloc_flag, nu, T0, dT, \
-        t_switch, p_k, lambda_0, phi, epsilon_0, delta_I, delta, beta, \
-        iter_lmt, iter_lmt_search
-    verbosity = convert_num(params.find("verbosity").text)
+    global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
+        delta, beta, iter_lmt, iter_lmt_search, dT, verbosity, T0,\
+            improving, realloc_flag
     simulate_only = bool(convert_num(params.find("simulate_only").text))
-    improving = bool(convert_num(params.find("improving").text))
-    realloc_flag = bool(convert_num(params.find("realloc_flag").text))
-    nu = convert_num(params.find("nu").text)
-    T0 = convert_num(params.find("T0").text)
-    dT = convert_num(params.find("dT").text)
-    t_switch = convert_num(params.find("t_switch").text)
-    p_k = convert_num(params.find("p_k").text)
     lambda_0 = convert_num(params.find("lambda_0").text)
     phi = convert_num(params.find("phi").text)
     epsilon_0 = convert_num(params.find("epsilon_0").text)
@@ -889,7 +931,12 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     beta = convert_num(params.find("beta").text)
     iter_lmt = convert_num(params.find("iter_lmt").text)
     iter_lmt_search = convert_num(params.find("iter_lmt_search").text)
+    dT = convert_num(params.find("dT").text)
+    verbosity = convert_num(params.find("verbosity").text)
 
+    # Hard-coded parameters
+    T0 = 3
+    improving = 0
     # Compute k, B, r_d
     global k, B, r_d
     k = math.log((1-p)/p)/T_D  # natural log, ln()
