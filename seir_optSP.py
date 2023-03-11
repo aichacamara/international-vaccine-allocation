@@ -9,8 +9,10 @@ import argparse
 import shutil
 import csv
 import sys
+import time
 
 def main():
+    start_time = time.time()
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, iter, V_opt, \
         z, donor_deaths, tot_deaths, t_sim, dVmax, dVmin, phase, fn_base #H1,
 
@@ -257,7 +259,10 @@ def main():
     
             fn.write("-------------------------------Parameters--------------------------------" + "\n")
             fn.write("Simulate only: " + str(simulate_only) + "\n")
-            fn.write("Priority: " + str(priority[0]) + "\n")
+            fn.write("Priority (decreasing): ")
+            for a1 in range(len(priority)): 
+                fn.write(str(priority[a1]) + " ")
+            fn.write("\n")
             fn.write("Lagrange multiplier for infection: " + str(lambda_0) + "\n")
             fn.write("Exploration multiplier for lambda: " + str(phi) + "\n")
             fn.write("Exploration tolerance for LP: " + str(epsilon_0) + "\n")
@@ -364,13 +369,13 @@ def main():
                     V[a1, t] = B[t]
                 # Simulate   
                 t_sim, alpha, V_cal, V, D = simulate(V)
-                deaths = (1 - nu)*D[donor, T] 
+                deaths_sim_only = (1 - nu)*D[donor, T] 
                 for a in A:
-                    deaths += nu*D[a, T]
-                donor_deaths = D[donor, T]
-                tot_deaths = 0
+                    deaths_sim_only += nu*D[a, T]
+                donor_deaths_sim_only = D[donor, T]
+                tot_deaths_sim_only = 0
                 for a in A:
-                    tot_deaths += D[a, T]
+                    tot_deaths_sim_only += D[a, T]
                 V_opt = {(a, t): (V[a, t] if t < T else 0) for a in A for t in range(T+1)} 
                 # Compute total vacc by area
                 V_total = {a: 0 for a in A} 
@@ -378,19 +383,24 @@ def main():
                     for t in range(T):
                         V_total[a] += V_opt[a, t]
 
-                fn.write(f'{a1: ^{9}}  {deaths: 8.2f}  {donor_deaths: 8.2f}  {tot_deaths: 12.2f}  {t_sim: 6.2f} ')
+                fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
                 for a in A:
                     fn.write(f'{V_total[a]: 5.0f} ')                    
-                fn.write("\n\n")
+                fn.write("\n")
             # Verbosity 1
             if verbosity >= 1:
-                fn.write("Vaccinations \n"
+                fn.write("\nVaccinations \n"
                         "  day    V by area \n")
                 for t in range(T - T0 + 1):
                     fn.write(f'{t: ^{7}}')
                     for a in A:
                         fn.write("  " + str(V_opt[a, t]) + "  ")
                     fn.write("\n")
+    end_time = time.time() - start_time
+    print("Number of areas: " + str(len(A)))
+    print("iter_lmt: " + str(iter_lmt))
+    print("iter_lmt_search: " + str(iter_lmt_search))
+    print("Time elapsed: " + str(end_time) + "s\n")
 
 def optimize_inner(l, V): 
     global deaths, donor_deaths, tot_deaths, t_n, zLP, zNLP, j_min, V_tot, \
@@ -574,9 +584,9 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     # Warm start using bases (can also use solution)
     if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
         vbas = {i: v.getVars()[i].VBasis for i in range(v.NumVars)} # Save basis for variables
-        ##psol = {i: v.getVars()[i].x for i in range(v.NumVars)}
+        #psol = {i: v.getVars()[i].x for i in range(v.NumVars)}
         cbas = {i: v.getConstrs()[i].CBasis for i in range(v.NumConstrs)} # Save basis for constraints (dual)
-        ##dsol = {i: v.getConstrs()[i].Pi for i in range(v.NumConstrs)}
+        #dsol = {i: v.getConstrs()[i].Pi for i in range(v.NumConstrs)}
 
     # Objective changes with lambda (outer loop) and tn (inner loop)
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
@@ -660,18 +670,22 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     if v.status == GRB.OPTIMAL:
         #if LP_count - infeas_count == 1: 
         #    v.write("./output/lamda-" + str(l) + "solve" + str(j) + ".lp") ##test: write first LP
+        
         return v.ObjVal
     elif v.status == GRB.INFEASIBLE:
         print("Infeasible LP at lambda =", l, "LP iteration j =", j, "exploration tol eps =", eps)
+
         return 100000000
     else:
         print("Optimize failed at lambda =", l, "LP iteration j =", j, "exploration tol eps =", eps)
         print("Status =", v.status)
+
+    
         return 100000000
 
 def simulate(V):
-    global I, I_V, G # Behavior
-    # Define state variables, alpha, delta_E, V_star, V_plus
+    global I, I_V, G # G: Behavior
+    # Define state variables, alpha, delta_E, V_star, V_minus
     S = {(a, t): 0 for a in A for t in range(T+1)}     # t=0,...,T b/c computed in diff eq
     S_V = {(a, t): 0 for a in A for t in range(T+1)}
     E = {(a, t): 0 for a in A for t in range(T+1)}   
@@ -687,7 +701,7 @@ def simulate(V):
     alpha = {(a, t): 0 for a in A for t in range(T)}    #  t=0,...,T-1 b/c not computed in diff eq
     delta_E = {(a, t): 0 for a in A for t in range(T)}
     V_star = {(a, t): 0 for a in A for t in range(T)}
-    V_plus = {(a, t): 0 for a in A for t in range(T)}
+    V_minus = {a: 0 for a in A}                       # stores V_star before realloc
 
     # Assign initial states
     for a in A:
@@ -735,44 +749,36 @@ def simulate(V):
             else:
                 V_star[a, t] = min(W[a, t] - W[a, t]*delta_E[a, t]/S[a, t], V[a, t])
 
-        # Realloc: 2 areas. Recompute V_star
+        """# Realloc: 2 areas. Recompute V_star
         if n_a == 2: # old: if realloc_flag and
             # area[0]
             if S[A[0], t] < 0.0000001:
                 Wnew = W[A[0], t]
             else:
                 Wnew = W[A[0], t] - W[A[0], t]*delta_E[A[0], t]/S[A[0], t]
-#            V_star[A[0], t] = min(Wnew, V[A[0], t] + V[A[1], t] - V_star[A[1], t]) # error. Replaced MV
-            V_star[A[0], t] += min(Wnew, V[A[1], t] - V_star[A[1], t]) # add avail realloc from A[1]
+            V_star[A[0], t] = min(Wnew, V[A[0], t] + V[A[1], t] - V_star[A[1], t]) # add avail realloc from A[1] (original version)
+#            V_star[A[0], t] += min(Wnew, V[A[1], t] - V_star[A[1], t]) # error in paper. causes negative states MV
 #            V_star[A[0], t] = min(Wnew, B[t] - V_star[A[1], t]) # Remove slack: realloc to 0
             # area[1]
             if S[A[1], t] < 0.0000001:
                 Wnew = W[A[1], t]
             else:
                 Wnew = W[A[1], t] - W[A[1], t]*delta_E[A[1], t]/S[A[1], t]
-            V_star[A[1], t] += min(Wnew, V[A[0], t] - V_star[A[0], t]) # add avail realloc from A[0]
-#            V_star[A[1], t] = min(Wnew, V[A[1], t] + V[A[0], t] - V_star[A[0], t]) # error. Replaced MV
-        # Realloc: more than 2 areas.
-        if n_a > 2:
+            V_star[A[1], t] = min(Wnew, V[A[1], t] + V[A[0], t] - V_star[A[0], t]) # add avail realloc from A[0]
+#            V_star[A[1], t] += min(Wnew, V[A[0], t] - V_star[A[0], t]) # error in paper. causes negative states MV """
+        # Realloc: any number of areas. Uses priority.
+        if n_a >= 2:
             realloc = 0 # amount avail to realloc
             for a in A:
                 realloc += V[a, t] - V_star[a, t] # unused vacc
-#            if t == 46: ## test
-#                print("t=46, realloc = ", realloc)
+                V_minus[a] = V_star[a, t] # Store vacc before realloc
             for a in priority: # loop over areas in priority order
                 if S[a, t] < 0.0000001:
-                    Wnew = W[a, t] # limit on how much can be realloc to a
+                    Wnew = W[a, t] # limit on V_star
                 else:
                     Wnew = W[a, t] - W[a, t]*delta_E[a, t]/S[a, t]
-                realloc_V = min(Wnew, realloc) # amount realloc to this area
-                V_star[a, t] += realloc_V
-                realloc -= realloc_V
-#                if t == 46: # test
-#                    print("area = ", a, "Wnew = ", Wnew, "realloc_V = ", realloc_V, "V_star = ", V_star[a, t])
-
-#        if realloc_flag and n_a > 2:
-#            print("Reaalocation for more than 2 areas not implmented")
-#            quit()  
+                V_star[a, t] = min(Wnew, V_minus[a] + realloc) # Realloc as much as allowed to this area
+                realloc -= V_star[a, t] - V_minus[a] # subtract amount realloc to this area 
 
         # difference equations including W
         for a in A:
@@ -849,7 +855,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     params = root.find("params")
 
     # read area data
-    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, donor, m, n, n_a
+    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, donor, m, n, n_a
     A = []
     A_D = [] # areas except donor
     gamma = {}
@@ -858,6 +864,13 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     rho_V = {}
     delta_r = {}
     N = {}
+
+    priority = area_data.find("priority").text
+    if not priority == None:
+        priority = priority.split(sep=",")
+    else:
+        priority = []
+
     donor = area_data.find("donor").text
     m = area_data.find("m").text
     n = convert_num(area_data.find("n").text)
@@ -873,7 +886,6 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         delta_r[area] = convert_num(child.find("delta_r").text)
         N[area] = convert_num(child.find("N").text)
     n_a = len(A)
-
 
     # read scenario data
     global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
@@ -918,11 +930,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
             g[a] = 0    
 
     # read params
-    global simulate_only, priority, lambda_0, phi, epsilon_0, delta_I, \
+    global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
         delta, beta, iter_lmt, iter_lmt_search, dT, verbosity, T0,\
             improving, realloc_flag
     simulate_only = bool(convert_num(params.find("simulate_only").text))
-    priority = params.find("priority").text
     lambda_0 = convert_num(params.find("lambda_0").text)
     phi = convert_num(params.find("phi").text)
     epsilon_0 = convert_num(params.find("epsilon_0").text)
@@ -933,17 +944,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     iter_lmt_search = convert_num(params.find("iter_lmt_search").text)
     dT = convert_num(params.find("dT").text)
     verbosity = convert_num(params.find("verbosity").text)
+
+    # Hard-coded parameters
     T0 = 3
-
-    improving = convert_num(params.find("improving").text)
-    realloc_flag = convert_num(params.find("realloc_flag").text)
-
-    if not priority == None:
-        priority = priority.split(sep=",")
-    else:
-        priority = []
-
-
+    improving = 0
     # Compute k, B, r_d
     global k, B, r_d
     k = math.log((1-p)/p)/T_D  # natural log, ln()
@@ -966,7 +970,6 @@ def output_state_equations(fn: TextIOWrapper,
                            state: dict):
     """
     Helper function to generate file output listing state values over area and time in a formatted way
-
     Params:
         fn: the file to have the output written to
         num_length: the length of the spacing numbers are centered inside of
@@ -974,7 +977,6 @@ def output_state_equations(fn: TextIOWrapper,
         upper_limit: the upper limit of the time bounds
         state_name: the name of the outputted state values
         state: the object containing the values for area and time
-
     Returns:
         None
     """
