@@ -1,10 +1,11 @@
 --------------------------------Area data--------------------------------
-Area name: donor nondonor1 nondonor2 
-Gamma: 1 1 1 
-Rho_I_N: 360 72 72 
-Rho: 0.78 0.78 0.78 
-Rho_V: 0 0 0 
-N: 100000 100000 100000 
+Area name:                        donor nondonor1 nondonor2 
+Population:                      100000 100000 100000 
+Vaccination Rate:                0 0 0 
+Initial cases per day = rho_I*N: 360 72 72 
+Rate out of state I:             0.29141000000000006 0.25641 0.25641 
+Behavior infection multiplier:   1 1 1 
+Proportion willing to be vacc:   0.78 0.78 0.78 
 n: 120000
 ------------------------------Scenario data------------------------------
 Time horizon (days): 180
@@ -39,25 +40,26 @@ Verbosity: 2
 -------------------------------------------------------------------------
 Convergence: Min/Max change in V_cal, (sim - LP)
 
-i  j     lambda    zNLP    deaths tot_deaths t_n    conv of V_cal     vacc by area
+                           --------deaths-------_
+i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area
 first simulation
-0  0       0        0      914.33  2165.34   65.81                       0  71581  59013 
+0  0       0        0      914.33   914.33  2165.34  65.81                      0  71581  59013 
 optimal (best deaths found)
-0  1     0.0010            602.40  2066.47   52.35 (  -95.3, 489.6)  68087  48689  58723 
-minimum (best zNLP for last lambda) w/ convergence for last LP
-0  1     0.0010   767.98   602.40  2066.47   52.35 ( -196.7, 695.5)  68087  48689  58723 
+0  1     0.0010   767.98   602.40   602.40  2066.40  52.35 ( -196.7, 695.5)  68087  48610  58814 
+minimum (best zNLP w/ Lagrangian for last lambda) w/ convergence for last LP
+0  1     0.0010   767.98   602.40   602.40  2066.40  52.35 ( -196.7, 695.5)  68087  48610  58814 
 
-Outer Loop over lambda. j_min = iter of inner loop that achieves best zNLP
-iter   lambda j_min wtd deaths subopt
-0      0.0010  1    602.40      0.00 
+Outer Loop over lambda. j_min = iter of inner loop that achieves best wtd deaths
+iter  lambda j_min  zNLP  wtd_deaths  subopt  t_n   conv of V_cal
+0     0.0010  1    767.98   602.40      0.00  52.35 ( -196.7, 695.5)
 
-Inner Loop at last lambda
-iter   zNLP     subopt   deaths donor_deaths tot_deaths t_n   vacc by area
-0        0.00   -767.98   914.33    914.33   2165.34   65.81     0  71581  59013 
-1      767.98      0.00   602.40    602.40   2066.47   52.35  68087  48689  58723 
+Inner Loop at last i (last lambda)
+iter  zNLP subopt w/in this i wtd_deaths subopt  t_n   conv of V_cal
+0   1040.83    272.84         914.33    311.92   52.35 (    0.0,   0.0)
+1    767.98      0.00         602.40      0.00   52.35 ( -196.7, 695.5)
 
-Vaccinations: sim of best LP (best j), last lambda (V_min) 
-  day    V_opt by area 
+Vaccinations: sim of best LP (best j), last lambda (min) 
+  day    Vacc by area 
    0     1500.0    0.0    0.0  
    1     1500.0    0.0    0.0  
    2     1500.0    0.0    0.0  
@@ -127,15 +129,15 @@ Vaccinations: sim of best LP (best j), last lambda (V_min)
   66     0.0    0.0    1500.0  
   67     0.0    0.0    1500.0  
   68     0.0    0.0    1500.0  
-  69     0.0    1500.0    0.0  
+  69     0.0    0.0    1500.0  
   70     0.0    1500.0    0.0  
   71     0.0    0.0    1500.0  
   72     0.0    0.0    1500.0  
-  73     0.0    1500.0    0.0  
+  73     0.0    0.0    1500.0  
   74     0.0    0.0    1500.0  
   75     0.0    0.0    1500.0  
-  76     0.0    0.0    1500.0  
-  77     0.0    0.0    1500.0  
+  76     0.0    1500.0    0.0  
+  77     0.0    1500.0    0.0  
   78     0.0    0.0    1500.0  
   79     0.0    0.0    1500.0  
   80     0.0    0.0    1500.0  
@@ -144,8 +146,8 @@ Vaccinations: sim of best LP (best j), last lambda (V_min)
   83     0.0    0.0    1500.0  
   84     0.0    0.0    1500.0  
   85     0.0    0.0    1500.0  
-  86     0.0    138.2568968108103    1361.7431031891897  
-  87     0.0    551.7093052292321    948.2906947707679  
+  86     0.0    68.30203191148439    1431.6979680885156  
+  87     0.0    530.4700473278391    969.5299526721609  
   88     0.0    1500.0    0.0  
   89     0.0    1500.0    0.0  
   90     0.0    1500.0    0.0  
@@ -174,8 +176,8 @@ Vaccinations: sim of best LP (best j), last lambda (V_min)
   113    0.0    1500.0    0.0  
   114    0.0    1500.0    0.0  
   115    0.0    1500.0    0.0  
-  116    0.0    1498.961203446201    0.0  
-  117    0.0    0.0    0.0  
+  116    0.0    1500.0    0.0  
+  117    0.0    11.238652946697465    0.0  
   118    0.0    0.0    0.0  
   119    0.0    0.0    0.0  
   120    0.0    0.0    0.0  
@@ -237,8 +239,8 @@ Vaccinations: sim of best LP (best j), last lambda (V_min)
   176    0.0    0.0    0.0  
   177    0.0    0.0    0.0  
 
-Optimal vaccinations (V_opt) 
-  day    V_opt by area 
+Optimal vaccinations 
+  day    Vacc by area 
    0     1500.0    0.0    0.0  
    1     1500.0    0.0    0.0  
    2     1500.0    0.0    0.0  
@@ -308,15 +310,15 @@ Optimal vaccinations (V_opt)
   66     0.0    0.0    1500.0  
   67     0.0    0.0    1500.0  
   68     0.0    0.0    1500.0  
-  69     0.0    1500.0    0.0  
+  69     0.0    0.0    1500.0  
   70     0.0    1500.0    0.0  
   71     0.0    0.0    1500.0  
   72     0.0    0.0    1500.0  
-  73     0.0    1500.0    0.0  
+  73     0.0    0.0    1500.0  
   74     0.0    0.0    1500.0  
   75     0.0    0.0    1500.0  
-  76     0.0    0.0    1500.0  
-  77     0.0    0.0    1500.0  
+  76     0.0    1500.0    0.0  
+  77     0.0    1500.0    0.0  
   78     0.0    0.0    1500.0  
   79     0.0    0.0    1500.0  
   80     0.0    0.0    1500.0  
@@ -325,8 +327,8 @@ Optimal vaccinations (V_opt)
   83     0.0    0.0    1500.0  
   84     0.0    0.0    1500.0  
   85     0.0    0.0    1500.0  
-  86     0.0    138.2568968108103    1361.7431031891897  
-  87     0.0    551.7093052292321    948.2906947707679  
+  86     0.0    68.30203191148439    1431.6979680885156  
+  87     0.0    530.4700473278391    969.5299526721609  
   88     0.0    1500.0    0.0  
   89     0.0    1500.0    0.0  
   90     0.0    1500.0    0.0  
@@ -355,8 +357,8 @@ Optimal vaccinations (V_opt)
   113    0.0    1500.0    0.0  
   114    0.0    1500.0    0.0  
   115    0.0    1500.0    0.0  
-  116    0.0    1498.961203446201    0.0  
-  117    0.0    0.0    0.0  
+  116    0.0    1500.0    0.0  
+  117    0.0    11.238652946697465    0.0  
   118    0.0    0.0    0.0  
   119    0.0    0.0    0.0  
   120    0.0    0.0    0.0  
