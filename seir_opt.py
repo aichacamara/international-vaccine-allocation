@@ -9,10 +9,9 @@ import argparse
 import shutil
 import csv
 import sys
-import time
 
 def main():
-    start_time = time.time() #work for SP but not MV
+    ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
 
@@ -165,7 +164,8 @@ def main():
                         print("Warning: f is not unimin: y < fx and fx > fb")
                     if (fy > fx and fa < fy):
                         print("Warning: f is not unimin: fy > fx and fa < fy")
-        elapsed_time = time.time() - start_time # Worded for SM but not MV
+        elapsed_time = 0
+        ## elapsed_time = time.time() - start_time # Worded for SM but not MV
         print("\nLP count: ", LP_count, "Infeas count: ", infeas_count, 
                 "Time elapsed: ", elapsed_time, "s")
         print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
@@ -468,11 +468,11 @@ def optimize_inner(l, V):
     eps = eps_prev = epsilon_0 # eps_prev is eps at the previous best sim
     zLP = 1e14              # initialize value of LP. Used for stopping.
     zLP_prev = 2*zLP        # initialize previous value of zLP. They must differ. Used for stopping.
-    first_zLP_min_found = False
 
     while (abs(zLP - zLP_prev) >= delta_I or j < 2) and j < iter_lmt:
         j += 1
         LP_count += 1
+        zLP_prev = zLP
         # solve LP
         if improving == 1:
             zLP = solve_LP(l, t_LP, alpha_min, V_cal_min, eps)  # Improving: alpha_min, V_cal_min are best for this i
@@ -506,13 +506,8 @@ def optimize_inner(l, V):
             dVmax[i, j] = dVmax_0
             dVmin[i, j] = dVmin_0
 
-            if zNLP[i, j] <= zNLP[i, j_min[i]]:  # update best zLP, alpha, V_cal, V for this i (min)
+            if zNLP[i, j] <= zNLP[i, j_min[i]]:  # update best j, alpha, V_cal, V for this i (min)
                 j_min[i] = j
-                if first_zLP_min_found:
-                    zLP_prev = zLP_min  # save previous value to use in stopping criterion
-                else:
-                    first_zLP_min_found = True
-                zLP_min = zLP
                 alpha_min = alpha
                 V_cal_min = V_cal
                 V_min = V
