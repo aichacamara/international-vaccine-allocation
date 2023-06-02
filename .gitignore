@@ -1,2 +1,2 @@
-# Remove license file
-*.lic
+# ignore created output files.
+*.out
