@@ -13,7 +13,7 @@ import sys
 def main():
     ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
-    global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
+   # global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
 
     # read input file, compute constants
     import_xml(xml_path=os.getcwd() + "/" + input_file)
@@ -121,20 +121,20 @@ def main():
                 # Phase 2: Golden ratio search on interval [a, b] with check for unimin
                 # Initialize Phase 2
                 if x1 <= x3:
-                    a = x1
-                    b = x3
+                    a0 = x1
+                    b0 = x3
                     fa = f1
                     fb = f3
 
                 if x1 > x3:
-                    a = x3
-                    b = x1
+                    a0 = x3
+                    b0 = x1
                     fa = f3
                     fb = f1
 
                 # Two more iterations, at x and y
-                x = a + 0.618 * (b - a)  # current larger x value
-                y = b - 0.618 * (b - a)  # current smaller x value
+                x = a0 + 0.618 * (b0 - a0)  # current larger x value
+                y = b0 - 0.618 * (b0 - a0)  # current smaller x value
                 i = i + 1
                 l[i] = x
                 z[i] = optimize_inner(l[i], V)
@@ -148,15 +148,15 @@ def main():
                 # Phase 2 loop
                 while (abs(fx - fy) > delta and i < iter_lmt_search):
                     i = i + 1
-                    if fx > fy:        		    # minimum is in [a,x], so update b
-                        b, fb, x, fx = (x, fx, y, fy)
-                        y = b - 0.618 * (b - a)
+                    if fx > fy:        		    # minimum is in [a1,x], so update b
+                        b0, fb, x, fx = (x, fx, y, fy)
+                        y = b0 - 0.618 * (b0 - a0)
                         l[i] = y
                         z[i] = optimize_inner(l[i], V)
                         fy = z[i]
-                    else:	                    # minimum is in [y,b], so update a
-                        a, fa, y, fy = (y, fy, x, fx)
-                        x = a + 0.618 * (b - a)
+                    else:	                    # minimum is in [y,b], so update a1
+                        a0, fa, y, fy = (y, fy, x, fx)
+                        x = a0 + 0.618 * (b0 - a0)
                         l[i] = x
                         z[i] = optimize_inner(l[i], V)
                         fx = z[i]
@@ -165,7 +165,7 @@ def main():
                     if (fy > fx and fa < fy):
                         print("Warning: f is not unimin: fy > fx and fa < fy")
         elapsed_time = 0
-        ## elapsed_time = time.time() - start_time # Worded for SM but not MV
+        ## elapsed_time = time.time() - start_time # Worked for SM but not MV
         print("\nLP count: ", LP_count, "Infeas count: ", infeas_count, 
                 "Time elapsed: ", elapsed_time, "s")
         print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
@@ -193,7 +193,7 @@ def main():
                             V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] 
                         )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
  
-    # Write output file (optimize)
+    # Write output file
     with open(fn_base + ".out", "w") as fn:
         if verbosity >= 1:
             # input echo
@@ -415,7 +415,7 @@ def optimize_inner(l, V):
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
             for a in A:
                 V_table[a, t, 0, 0] = V[a, t]
-        # Compute deaths, zNLP from sim. This zNLP is used in putput if it is best for i = 0 (min)
+        # Compute deaths, zNLP from sim. This zNLP is used in output if it is best for i = 0 (min)
         deaths[0, 0] = (1 - nu)*D[donor, T]
         donor_deaths[0, 0] = D[donor, T]
         tot_deaths[0, 0] = 0
@@ -425,7 +425,7 @@ def optimize_inner(l, V):
         # Use fixed t_n in LP for all j, but include dT more days since t_n may increase
         t_LP = min(math.ceil(t_n[0, 0]) + dT, T) 
         zNLP[0, 0] = deaths[0, 0] + l*sum(I[a, t] for a in A_D for t in range(1, t_LP + 1)) \
-          - (1e-9)*sum(V[a, t]*(T-t) for a in A for t in range(T)) # A_D: no donor in Lagr
+          - (1e-9)*sum(V[a, t]*(T-t) for a in A for t in range(T)) # sum I over A_D: no donor in Lagr
         # Initialize min from this sim (for solve_LP)
         alpha_min = alpha
         V_cal_min = V_cal
@@ -463,7 +463,7 @@ def optimize_inner(l, V):
  
     # Initialize for j loop
     # Use fixed t_n in LP for all j, but include dT more days since t_n may increase
-    t_LP = min(math.ceil(t_n[i, 0]) + dT, T) # For i=1, t_LP was already computed. This doesn't change it.
+    t_LP = min(math.ceil(t_n[i, 0]) + dT, T) # For i=0, t_LP was already computed. This doesn't change it.
     j = 0 # inner loop counter
     eps = eps_prev = epsilon_0 # eps_prev is eps at the previous best sim
     zLP = 1e14              # initialize value of LP. Used for stopping.
