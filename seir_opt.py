@@ -20,7 +20,7 @@ def main():
     import_xml(xml_path=os.getcwd() + "/" + input_file)
     # initialize output filename and directory
     try:
-            os.mkdir(os.getcwd() + "/" + "output")
+        os.mkdir(os.getcwd() + "/" + "output")
     except:
         pass 
     fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_nu{nu:3.1f}' #_nu{nu:3.1f} output file name uses inputs
@@ -604,6 +604,14 @@ def simulate(V):
                                              I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
     return t_sim, alpha, V_cal, V_star, D
 
+######################################## INPUT HELPERS ########################################
+
+def xml_text(element: ET.Element, name: str):
+    try:
+        return convert_num(element.find(name).text)
+    except:
+        return None
+
 def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to the XML file
     root = ET.parse(xml_path).getroot()
 
@@ -613,7 +621,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
 
     # read area data
     global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, donor, m, n, n_a
-    A = []
+    A = [] # all areas
     A_D = [] # areas except donor
     gamma = {}
     rho_I_N = {}
@@ -623,7 +631,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     N = {}
 
     priority = area_data.find("priority").text
-    
+    print(priority)
     # if there is no priority, assign priority to empty array
     if priority == None:
         priority = []
@@ -648,6 +656,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     # read scenario data
     global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
         p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
+    
+    # switchover policy
+    global t_switch
+    
     T = convert_num(scenario_data.find("T").text)
     B_0 = convert_num(scenario_data.find("B_0").text) 
     nu = convert_num(scenario_data.find("nu").text)
@@ -664,7 +676,13 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     T_D = convert_num(scenario_data.find("T_D").text)
     p = convert_num(scenario_data.find("p").text)
     b_arr = scenario_data.find("b").text
-    v_u= convert_num(scenario_data.find("v_u").text) 
+    v_u = convert_num(scenario_data.find("v_u").text) 
+    t_switch = scenario_data.find("t_switch")
+    
+    if t_switch is not None:
+        t_switch = t_switch.text.split(",")
+        print(t_switch)
+    
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
         for i in range(len(b_arr)):
@@ -702,6 +720,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     iter_lmt_search = convert_num(params.find("iter_lmt_search").text)
     dT = convert_num(params.find("dT").text)
     verbosity = convert_num(params.find("verbosity").text)
+    
 
     # Hard-coded parameters
     T0 = 3
@@ -982,7 +1001,7 @@ def o_loop_report():
             return 0
     
 
-######################################## Script Run ########################################
+########################################### Script Run ###########################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 

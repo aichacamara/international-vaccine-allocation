@@ -45,6 +45,22 @@
     <T_D>25</T_D>          <!-- 45 Time for variant to dominate -->
     <p>0.01</p>            <!-- prop of infected that have new variant when introduced -->
     <b></b>                <!-- Vaccine avail as a prop, day = 0,...,T-1. Default = 1 -->
+    
+    <!-- Switchover policy (optional parameter):
+    Usage:
+      give a list of switchover time periods, if there are not enough "switch" times, 
+      times will be recycled until loops are completed (or Time horizon terminates)
+
+      A = [area1, area2, area3, area4]
+      t_switch = [30, 60]
+
+      area1 = 30
+      area2 = 60
+      area3 = 30
+      area4 = 60
+      ...
+    -->
+    <t_switch>30,60</t_switch>  
     <!-- 
       to add b here, just seperate the numbers by commas
       ex. <b>1,1,1,1,1</b>
@@ -63,6 +79,5 @@
     <iter_lmt_search>5</iter_lmt_search>  <!-- iteration limit for lambda -->
     <dT>4</dT>                            <!-- days after t_n[0] in Lagr (t_LP). Set >= T to use all t -->
     <verbosity>2</verbosity>              <!-- 0 least verbose output ... 2 most verbose -->
-  
   </params>
 </data>
