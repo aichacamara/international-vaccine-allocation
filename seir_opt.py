@@ -13,7 +13,7 @@ import sys
 def main():
     ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
-    global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
+    # global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global fn, csv_file #output files
 
     # read input file, compute constants
@@ -46,11 +46,23 @@ def main():
         SV0[a] = rho_V[a]*N[a] - EV0[a] - IV0[a]
         S0[a] = N[a] - E0[a] - EV0[a] - I0[a] - IV0[a] - SV0[a]
         W0[a] = rho[a]*N[a] - SV0[a] - EV0[a] - IV0[a] - rho[a]*E0[a] - rho[a]*I0[a]
-    # Initialize V
+    # Initialize V for initial sim using priority list. Use splitting between areas.
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    # allocate vaccine to highest priority area
-    for t in range(T - T0 + 1): # t=0,...,T-T0+1
-        V[priority[0], t] = B[t]     # highest priority
+    new_priority = priority # for consistency with simulate_only, where the priorities change
+    t_prev = 0	# initialize previous switching time
+    for z in range(n_a):      # area index 0, ..., a_n - 1
+        if z < n_a - 1: 
+            t_next =  t_switch[z]	            # set next switching time
+            for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
+                V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                for z1 in range(z + 1, n_a):
+                    if z1 > z:          # divide proportion split b/t lower-priority areas
+                        V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+            t_prev = t_next                         # update for next area	 
+        else: 
+            t_next =  T	                            # for last area, next switching time is T
+            for t in range(t_prev, t_next):
+                V[A[z], t] = B[t]                      # for last area, no splitting
 
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
@@ -122,20 +134,20 @@ def main():
                 # Phase 2: Golden ratio search on interval [a, b] with check for unimin
                 # Initialize Phase 2
                 if x1 <= x3:
-                    a = x1
-                    b = x3
+                    a0 = x1
+                    b0 = x3
                     fa = f1
                     fb = f3
 
                 if x1 > x3:
-                    a = x3
-                    b = x1
+                    a0 = x3
+                    b0 = x1
                     fa = f3
                     fb = f1
 
                 # Two more iterations, at x and y
-                x = a + 0.618 * (b - a)  # current larger x value
-                y = b - 0.618 * (b - a)  # current smaller x value
+                x = a0 + 0.618 * (b0 - a0)  # current larger x value
+                y = b0 - 0.618 * (b0 - a0)  # current smaller x value
                 i = i + 1
                 l[i] = x
                 z[i] = optimize_inner(l[i], V)
@@ -149,15 +161,15 @@ def main():
                 # Phase 2 loop
                 while (abs(fx - fy) > delta and i < iter_lmt_search):
                     i = i + 1
-                    if fx > fy:        		    # minimum is in [a,x], so update b
-                        b, fb, x, fx = (x, fx, y, fy)
-                        y = b - 0.618 * (b - a)
+                    if fx > fy:        		    # minimum is in [a1,x], so update b
+                        b0, fb, x, fx = (x, fx, y, fy)
+                        y = b0 - 0.618 * (b0 - a0)
                         l[i] = y
                         z[i] = optimize_inner(l[i], V)
                         fy = z[i]
-                    else:	                    # minimum is in [y,b], so update a
-                        a, fa, y, fy = (y, fy, x, fx)
-                        x = a + 0.618 * (b - a)
+                    else:	                    # minimum is in [y,b], so update a1
+                        a0, fa, y, fy = (y, fy, x, fx)
+                        x = a0 + 0.618 * (b0 - a0)
                         l[i] = x
                         z[i] = optimize_inner(l[i], V)
                         fx = z[i]
@@ -166,7 +178,7 @@ def main():
                     if (fy > fx and fa < fy):
                         print("Warning: f is not unimin: fy > fx and fa < fy")
         elapsed_time = 0
-        ## elapsed_time = time.time() - start_time # Worded for SM but not MV
+        ## elapsed_time = time.time() - start_time # Worked for SM but not MV
         print("\nLP count: ", LP_count, "Infeas count: ", infeas_count, 
                 "Time elapsed: ", elapsed_time, "s")
         print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
@@ -257,7 +269,7 @@ def optimize_inner(l, V):
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
             for a in A:
                 V_table[a, t, 0, 0] = V[a, t]
-        # Compute deaths, zNLP from sim. This zNLP is used in putput if it is best for i = 0 (min)
+        # Compute deaths, zNLP from sim. This zNLP is used in output if it is best for i = 0 (min)
         deaths[0, 0] = (1 - nu)*D[donor, T]
         donor_deaths[0, 0] = D[donor, T]
         tot_deaths[0, 0] = 0
@@ -267,7 +279,7 @@ def optimize_inner(l, V):
         # Use fixed t_n in LP for all j, but include dT more days since t_n may increase
         t_LP = min(math.ceil(t_n[0, 0]) + dT, T) 
         zNLP[0, 0] = deaths[0, 0] + l*sum(I[a, t] for a in A_D for t in range(1, t_LP + 1)) \
-          - (1e-9)*sum(V[a, t]*(T-t) for a in A for t in range(T)) # A_D: no donor in Lagr
+          - (1e-9)*sum(V[a, t]*(T-t) for a in A for t in range(T)) # sum I over A_D: no donor in Lagr
         # Initialize min from this sim (for solve_LP)
         alpha_min = alpha
         V_cal_min = V_cal
@@ -305,7 +317,7 @@ def optimize_inner(l, V):
  
     # Initialize for j loop
     # Use fixed t_n in LP for all j, but include dT more days since t_n may increase
-    t_LP = min(math.ceil(t_n[i, 0]) + dT, T) # For i=1, t_LP was already computed. This doesn't change it.
+    t_LP = min(math.ceil(t_n[i, 0]) + dT, T) # For i=0, t_LP was already computed. This doesn't change it.
     j = 0 # inner loop counter
     eps = eps_prev = epsilon_0 # eps_prev is eps at the previous best sim
     zLP = 1e14              # initialize value of LP. Used for stopping.
@@ -560,17 +572,20 @@ def simulate(V):
 
         # check for the variant occuring, do not calculate if variant already emerged
         if not variant_emerge:
-            I_sum = 0
+            I_sum = I_max = 0 # Isum = sum over a and t, Imax = max over a of sum over t
             for a in A:
+                I_current = 0 # sum over t for current a
                 if a != donor: ## donor doesn't contribute to variant
                     for t1 in range(t+1): # t1=0,...,t 
-                        I_sum += I[a, t1]    # sum all infected up to current time
-                ## donor contribute to variant: replaces "if a != donor"
-#               for t1 in range(t+1): # t1=0,...,t 
-#                   I_sum += I[a, t1]    # sum all infected up to current time
-            # If this sum > n, variant emerges. Compute t_sim
+                        I_sum += I[a, t1]     # sum all infected up to current time
+                        I_current += I[a, t1] # sum current area up to current time
+                    if I_max < I_current:     # update area that has max infections
+                        area_max = a
+                        I_max = I_current
+            # If cum infections > n, variant emerges. Compute t_sim and m = area where variant emerges
             if I_sum > n:
                 variant_emerge = True
+                m = area_max # variant emerges in area with max cum I
                 I_tot = 0
                 for a in A:
                     if a != donor:
@@ -620,7 +635,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     params = root.find("params")
 
     # read area data
-    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, donor, m, n, n_a
+    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, t_switch, split, donor, m, n, n_a
     A = [] # all areas
     A_D = [] # areas except donor
     gamma = {}
@@ -636,9 +651,12 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     if priority == None:
         priority = []
     priority = priority.split(sep=",")
+    
+    # t_switch = [30, 90] ## hardwired
+    # split = 0.2         ## hardwired
 
     donor = area_data.find("donor").text
-    m = area_data.find("m").text
+    # m = area_data.find("m").text  # computing varaint area, so don't read it
     n = convert_num(area_data.find("n").text)
     for child in area_data.findall("area"):
         area = child.attrib["name"]
@@ -658,7 +676,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
     
     # switchover policy
-    global t_switch
+    global t_switch, split
     
     T = convert_num(scenario_data.find("T").text)
     B_0 = convert_num(scenario_data.find("B_0").text) 
@@ -678,10 +696,13 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     b_arr = scenario_data.find("b").text
     v_u = convert_num(scenario_data.find("v_u").text) 
     t_switch = scenario_data.find("t_switch")
+    split = scenario_data.find("switch_split")
     
     if t_switch is not None:
         t_switch = t_switch.text.split(",")
-        print(t_switch)
+    
+    if split is not None:
+        split = convert_num(split.text)
     
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
