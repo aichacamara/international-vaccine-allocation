@@ -833,16 +833,16 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     v_l = {} 
     v_u = {}
     g = {}
-    if v_input == 0: # no behavior
-        for a in A:
-            v_l[a] = 0
-            v_u[a] = 1 
-            g[a] = 1 
-    else:           # linear behavior
+    if v_input: # linear behavior
         for a in A:
             v_l[a] = 0
             v_u[a] = v_input 
-            g[a] = 0    
+            g[a] = 0  
+    else:           # no behavior
+        for a in A:
+            v_l[a] = 0
+            v_u[a] = 1 
+            g[a] = 1   
 
     # read params
     global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
@@ -874,8 +874,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
 def convert_num(num: str): #Converts an input string "num" to float or int
     if float(num) % 1 != 0:
         return float(num)
-    else:
-        return int(num)
+    return int(num)
 
 def output_state_equations(fn: TextIOWrapper,
                            num_length: int,
