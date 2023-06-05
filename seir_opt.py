@@ -45,11 +45,23 @@ def main():
         SV0[a] = rho_V[a]*N[a] - EV0[a] - IV0[a]
         S0[a] = N[a] - E0[a] - EV0[a] - I0[a] - IV0[a] - SV0[a]
         W0[a] = rho[a]*N[a] - SV0[a] - EV0[a] - IV0[a] - rho[a]*E0[a] - rho[a]*I0[a]
-    # Initialize V
+    # Initialize V for initial sim using priority list. Use splitting between areas.
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    # allocate vaccine to highest priority area
-    for t in range(T - T0 + 1): # t=0,...,T-T0+1
-        V[priority[0], t] = B[t]     # highest priority
+    new_priority = priority # for consistency with simulate_only, where the priorities change
+    t_prev = 0	# initialize previous switching time
+    for z in range(n_a):      # area index 0, ..., a_n - 1
+        if z < n_a - 1: 
+            t_next =  t_switch[z]	            # set next switching time
+            for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
+                V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                for z1 in range(z + 1, n_a):
+                    if z1 > z:          # divide proportion split b/t lower-priority areas
+                        V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+            t_prev = t_next                         # update for next area	 
+        else: 
+            t_next =  T	                            # for last area, next switching time is T
+            for t in range(t_prev, t_next):
+                V[A[z], t] = B[t]                      # for last area, no splitting
 
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
@@ -345,10 +357,26 @@ def main():
             fn.write("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
             V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
             for a1 in A: 
-                # Initialize V giving priority to area a1
-                V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-                for t in range(T - T0 + 1): # t=0,...,T-T0+1
-                    V[a1, t] = B[t]
+                # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
+                new_priority = [a1]
+                for a in priority:
+                    if a != a1: new_priority.append(a)
+                V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
+                t_prev = 0	# initialize previous switching time
+                for z in range(n_a):      # area index 0, ..., a_n - 1
+                    if z < n_a - 1: 
+                        t_next =  t_switch[z]	                        # set next switching time
+                        for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
+                            V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
+                            for z1 in range(z + 1, n_a):
+                                if z1 > z:          # divide proportion split b/t lower-priority areas
+                                    V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                        t_prev = t_next                                 # update for next area	 
+                    else: 
+                        t_next =  T	                                    # for last area, next switching time is T
+                        for t in range(t_prev, t_next):
+                            V[A[z], t] = B[t]                           # for last area, no splitting
+
                 # Simulate   
                 t_sim, alpha, V_cal, V, D = simulate(V)
                 deaths_sim_only = (1 - nu)*D[donor, T] 
@@ -716,7 +744,7 @@ def simulate(V):
             D[a, t + 1] = D[a, t] + r_d[a]*p_D*I[a, t] + r_d[a]*p_V_D*I_V[a, t]
             R[a, t + 1] = R[a, t] + r_d[a]*(1 - p_D)*I[a, t] + r_d[a]*(1 - p_V_D)*I_V[a, t]
 
-                # check for the variant occuring, do not calculate if variant already emerged
+        # check for the variant occuring, do not calculate if variant already emerged
         if not variant_emerge:
             I_sum = I_max = 0 # Isum = sum over a and t, Imax = max over a of sum over t
             for a in A:
@@ -773,7 +801,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     params = root.find("params")
 
     # read area data
-    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, donor, m, n, n_a
+    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, t_switch, split, donor, m, n, n_a
     A = []
     A_D = [] # areas except donor
     gamma = {}
@@ -788,9 +816,11 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         priority = priority.split(sep=",")
     else:
         priority = []
+    t_switch = [30, 90] ## hardwired
+    split = 0.2         ## hardwired
 
     donor = area_data.find("donor").text
-    m = area_data.find("m").text
+    # m = area_data.find("m").text  # computing varaint area, so don't read it
     n = convert_num(area_data.find("n").text)
     for child in area_data.findall("area"):
         area = child.attrib["name"]
