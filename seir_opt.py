@@ -716,19 +716,22 @@ def simulate(V):
             D[a, t + 1] = D[a, t] + r_d[a]*p_D*I[a, t] + r_d[a]*p_V_D*I_V[a, t]
             R[a, t + 1] = R[a, t] + r_d[a]*(1 - p_D)*I[a, t] + r_d[a]*(1 - p_V_D)*I_V[a, t]
 
-        # check for the variant occuring, do not calculate if variant already emerged
+                # check for the variant occuring, do not calculate if variant already emerged
         if not variant_emerge:
-            I_sum = 0
+            I_sum = I_max = 0 # Isum = sum over a and t, Imax = max over a of sum over t
             for a in A:
+                I_current = 0 # sum over t for current a
                 if a != donor: ## donor doesn't contribute to variant
                     for t1 in range(t+1): # t1=0,...,t 
-                        I_sum += I[a, t1]    # sum all infected up to current time
-                ## donor contribute to variant: replaces "if a != donor"
-#               for t1 in range(t+1): # t1=0,...,t 
-#                   I_sum += I[a, t1]    # sum all infected up to current time
-            # If this sum > n, variant emerges. Compute t_sim
+                        I_sum += I[a, t1]     # sum all infected up to current time
+                        I_current += I[a, t1] # sum current area up to current time
+                    if I_max < I_current:     # update area that has max infections
+                        area_max = a
+                        I_max = I_current
+            # If cum infections > n, variant emerges. Compute t_sim and m = area where variant emerges
             if I_sum > n:
                 variant_emerge = True
+                m = area_max # variant emerges in area with max cum I
                 I_tot = 0
                 for a in A:
                     if a != donor:
