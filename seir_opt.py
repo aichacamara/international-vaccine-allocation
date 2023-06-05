@@ -12,8 +12,9 @@ import sys
 
 def main():
     ## start_time = time.time() #work for SP but not MV
-    global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base, fn
+    global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
+    global fn, csv_file #output files
 
     # read input file, compute constants
     import_xml(xml_path=os.getcwd() + "/" + input_file)
@@ -171,36 +172,17 @@ def main():
         print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
                 " Iter_lmt_search: ", iter_lmt_search)
 
-        # Write the csv (optimize)
-        with open(fn_base + "_plot.csv", "w") as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(
-                ["area", "t", "S", "SV", "E", "EV", "I",
-                    "IV", "H", "D", "R", "W", "V", "t_n", "L"]
-            )
-            csv_writer.writerow(
-                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n[i_opt,j_opt], L]
-            )
-            for a in A:
-                csv_writer.writerow(
-                    [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
-                     IV0[a], 0, 0, 0, S0[a], V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] # was V_min[a, 0], t_min 
-                )
-                for t in range(1, T + 1):
-                    csv_writer.writerow(
-                        [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
-                            IV1[a, t].x, 0, D1[a, t].x, R1[a, t].x, W1[a, t].x, 
-                            V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] 
-                        )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
- 
-    # Write output file (optimize)
+    # open output files
     fn = open(fn_base + ".out", "w")
-    output_input_echo()
+    csv_file = open(fn_base + "_plot.csv", "w") 
+    
+    o_input_echo()
     
     if not simulate_only:
-        # Verbosity 0
-        fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")        
+        # # Verbosity 0
+        # fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")        
         # Compute total vacc by area (sim, opt, and min)
+        global V_tot_sim, V_tot_min, V_tot_opt
         V_tot_sim = {a: 0 for a in A}
         V_tot_min = {a: 0 for a in A}
         V_tot_opt = {a: 0 for a in A}
@@ -301,10 +283,9 @@ def main():
             for a in A:
                 for t in range(T - T0 + 1):
                     V_tot_sim[a] += V[a, t]
-            fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
-            for a in A:
-                fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
-            fn.write("\n")
+                    
+            o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim)
+        
         # Verbosity 1
         if verbosity >= 1:
             for a1 in A:
@@ -810,8 +791,9 @@ def convert_num(num: str): #Converts an input string "num" to float or int
         return float(num)
     return int(num)
 
-# OUTPUT HELPERS
-def output_state_equations(fn: TextIOWrapper,
+######################################## OUTPUT HELPERS ########################################
+
+def o_state_equations(fn: TextIOWrapper,
                            num_length: int,
                            lower_limit: int,
                            upper_limit: int,
@@ -843,17 +825,41 @@ def output_state_equations(fn: TextIOWrapper,
                 f'{round(state[a, t], 2): ^{num_length}}')
         fn.write("\n")
 
-def output_input_echo():
+def o_input_echo():
     """
     Generates input file echo
+    If optimization scheme is in play, function will output to .csv
     
     Returns:
     (int) -> 1 on Success, 0 on Fail
     """
     try:
+        if not simulate_only:
+            #output to .csv
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(
+                ["area", "t", "S", "SV", "E", "EV", "I",
+                    "IV", "H", "D", "R", "W", "V", "t_n", "L"]
+            )
+            csv_writer.writerow(
+                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n[i_opt,j_opt], L]
+            )
+            for a in A:
+                csv_writer.writerow(
+                    [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
+                    IV0[a], 0, 0, 0, S0[a], V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] # was V_min[a, 0], t_min 
+                )
+                for t in range(1, T + 1):
+                    csv_writer.writerow(
+                        [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
+                            IV1[a, t].x, 0, D1[a, t].x, R1[a, t].x, W1[a, t].x, 
+                            V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] 
+                        )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
+        
+    
+        #output to .out
         if verbosity >= 1:
             # input echo
-            fn.write("ECHO")
             fn.write("--------------------------------Area data--------------------------------" + "\n")
             fn.write("Area name:                        ")
             for name in A:
@@ -922,9 +928,83 @@ def output_input_echo():
             fn.write("-------------------------------------------------------------------------" + "\n")
         return 1
     except:
+        print("Failed to output Input Echo")
         return 0
+
+def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim):
+    """Outputs policy report
+
+    Args:
+        a1 : element of list A, current priority view
+        deaths_sim_only (int): deaths by simulation
+        donor_deaths_sim_only (int): donor deaths by simulation
+        tot_deaths_sim_only (int): total deaths
+        V_tot_sim (int): vaccination total by simulation
+
+    Returns:
+        int: 0 on fail, 1 on success
+    """
+    if simulate_only:
+        try:
+            fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
+            for a in A:
+                fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
+            fn.write("\n")
+            return 1
+        except:
+            return 0
+    else:
+        try:
+            return 1
+        except:
+            return 0
+
+def o_inner_loop_report():
+    """
+    Outputs inner loop report based on verbosity and (global) simulate_only
     
-# Script begins here. Prompt for input file name.
+    Returns:
+    (int) -> 1 on Success, 0 on Fail
+    """
+    if simulate_only:
+        try:
+            return 1
+        except:
+            return 0
+    else:
+        try:
+            fn.write( "                           --------deaths-------_\n")
+            fn.write( "i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area\n")
+            fn.write("first simulation\n")
+            fn.write(f'0  0       0        0    {deaths[0,0]: 8.2f} {donor_deaths[0,0]: 8.2f} {tot_deaths[0,0]: 8.2f} {t_n[0,0]: 6.2f}                  ')
+            for a in A:
+                fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
+            fn.write("\n")
+
+            fn.write(f'optimal (best deaths found)\n')
+
+            fn.write(f'{i_opt: ^{2}} {j_opt: ^{2}} {l[i_opt]: 9.4f} {zNLP[i_opt,j_opt]: 8.2f} ')
+            fn.write(f'{deaths[i_opt,j_opt]: 8.2f} {donor_deaths[i_opt,j_opt]: 8.2f} {tot_deaths[i_opt,j_opt]: 8.2f} ')
+            fn.write(f'{t_n[i_opt,j_opt]: 6.2f} ({dVmin[i_opt,j_opt]: 7.1f},{dVmax[i_opt,j_opt]: 6.1f}) ')
+            for a in A:
+                fn.write(f'{V_tot_opt[a]: 5.0f} ')                    
+            fn.write("\n") 
+
+            fn.write(f'minimum (best zNLP w/ Lagrangian for last lambda) w/ convergence for last LP\n')
+
+            fn.write(f'{i: ^{2}} {j_min[i]: ^{2}} {l[i]: 9.4f} {zNLP[i,j_min[i]]: 8.2f} ')
+            fn.write(f'{deaths[i,j_min[i]]: 8.2f} {donor_deaths[i,j_min[i]]: 8.2f} {tot_deaths[i,j_min[i]]: 8.2f} ')
+            fn.write(f'{t_n[i,j_min[i]]: 6.2f} ({dVmin[i,j_min[i]]: 7.1f},{dVmax[i,j_min[i]]: 6.1f}) ')
+            for a in A:
+                fn.write(f'{V_tot_min[a]: 5.0f} ')                    
+            fn.write("\n\n") 
+            return 1
+        except:
+            return 0
+    # Verbosity 0
+    fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")   
+
+######################################## Script Run ########################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
