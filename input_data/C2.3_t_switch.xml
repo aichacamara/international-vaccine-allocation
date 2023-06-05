@@ -60,7 +60,8 @@
       area4 = 60
       ...
     -->
-    <t_switch>30,60</t_switch>  
+    <t_switch>30,60</t_switch>
+    <switch_split>0.2</switch_split>  
     <!-- 
       to add b here, just seperate the numbers by commas
       ex. <b>1,1,1,1,1</b>

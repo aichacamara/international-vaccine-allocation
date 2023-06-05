@@ -10,6 +10,33 @@ import shutil
 import csv
 import sys
 
+def simulate_switchover_policy():
+    """Runs simulation for switchover
+    """
+    if t_switch is None:
+        # allocate vaccine to highest priority area
+        for t in range(T - T0 + 1): # t=0,...,T-T0+1
+            V[priority[0], t] = B[t]     # highest priority
+    else:
+        new_priority = priority # for consistency with simulate_only, where the priorities change
+        t_prev = 0	# initialize previous switching time
+        for z in range(n_a):      # area index 0, ..., n_a - 1
+            if z < n_a - 1: 
+                t_next =  t_switch[z]	            # set next switching time
+                for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
+                    V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                    for z1 in range(z + 1, n_a):
+                        print(B[t])
+                        if z1 > z:          # divide proportion split b/t lower-priority areas
+                            V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                t_prev = t_next                         # update for next area	 
+            else: 
+                t_next =  T	                            # for last area, next switching time is T
+                for t in range(t_prev, t_next):
+                    V[A[z], t] = B[t]                      # for last area, no splitting
+        
+
+    
 def main():
     ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
@@ -46,23 +73,11 @@ def main():
         SV0[a] = rho_V[a]*N[a] - EV0[a] - IV0[a]
         S0[a] = N[a] - E0[a] - EV0[a] - I0[a] - IV0[a] - SV0[a]
         W0[a] = rho[a]*N[a] - SV0[a] - EV0[a] - IV0[a] - rho[a]*E0[a] - rho[a]*I0[a]
+        
     # Initialize V for initial sim using priority list. Use splitting between areas.
+    global V
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    new_priority = priority # for consistency with simulate_only, where the priorities change
-    t_prev = 0	# initialize previous switching time
-    for z in range(n_a):      # area index 0, ..., a_n - 1
-        if z < n_a - 1: 
-            t_next =  t_switch[z]	            # set next switching time
-            for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
-                V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
-                for z1 in range(z + 1, n_a):
-                    if z1 > z:          # divide proportion split b/t lower-priority areas
-                        V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
-            t_prev = t_next                         # update for next area	 
-        else: 
-            t_next =  T	                            # for last area, next switching time is T
-            for t in range(t_prev, t_next):
-                V[A[z], t] = B[t]                      # for last area, no splitting
+    simulate_switchover_policy()
 
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
@@ -210,10 +225,31 @@ def main():
         global V_sim
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
         for a1 in A: 
-            # Initialize V giving priority to area a1
-            V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-            for t in range(T - T0 + 1): # t=0,...,T-T0+1
-                V[a1, t] = B[t]
+            if t_switch is None:
+                # Initialize V giving priority to area a1
+                V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
+                for t in range(T - T0 + 1): # t=0,...,T-T0+1
+                    V[a1, t] = B[t]
+                continue
+             # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
+            new_priority = priority.remove(a1)
+            new_priority = priority.insert(0,a1)
+           
+            V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
+            t_prev = 0	# initialize previous switching time
+            for z in range(n_a):      # area index 0, ..., a_n - 1
+                if z < n_a - 1: 
+                    t_next =  t_switch[z]	                        # set next switching time
+                    for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
+                        V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
+                        for z1 in range(z + 1, n_a):
+                            if z1 > z:          # divide proportion split b/t lower-priority areas
+                                V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                    t_prev = t_next                                 # update for next area	 
+                else: 
+                    t_next =  T	                                    # for last area, next switching time is T
+                    for t in range(t_prev, t_next):
+                        V[A[z], t] = B[t]                           # for last area, no splitting
             # Simulate   
             t_sim, alpha, V_cal, V, D = simulate(V)
             deaths_sim_only = (1 - nu)*D[donor, T] 
@@ -651,9 +687,6 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     if priority == None:
         priority = []
     priority = priority.split(sep=",")
-    
-    # t_switch = [30, 90] ## hardwired
-    # split = 0.2         ## hardwired
 
     donor = area_data.find("donor").text
     # m = area_data.find("m").text  # computing varaint area, so don't read it
@@ -700,6 +733,8 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     
     if t_switch is not None:
         t_switch = t_switch.text.split(",")
+        for i in range(len(t_switch)):
+            t_switch[i] = convert_num(t_switch[i])
     
     if split is not None:
         split = convert_num(split.text)
