@@ -178,9 +178,7 @@ def main():
     
     o_input_echo()
     
-    if not simulate_only:
-        # # Verbosity 0
-        # fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")        
+    if not simulate_only:     
         # Compute total vacc by area (sim, opt, and min)
         global V_tot_sim, V_tot_min, V_tot_opt
         V_tot_sim = {a: 0 for a in A}
@@ -192,73 +190,12 @@ def main():
                 V_tot_opt[a] += V_table[a, t, i_opt, j_opt]
                 V_tot_min[a] += V_table[a, t, i, j_min[i]]
         # first sim
-        fn.write( "                           --------deaths-------_\n")
-        fn.write( "i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area\n")
-        fn.write("first simulation\n")
-        fn.write(f'0  0       0        0    {deaths[0,0]: 8.2f} {donor_deaths[0,0]: 8.2f} {tot_deaths[0,0]: 8.2f} {t_n[0,0]: 6.2f}                  ')
-        for a in A:
-            fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
-        fn.write("\n")
-
-        fn.write(f'optimal (best deaths found)\n')
-
-        fn.write(f'{i_opt: ^{2}} {j_opt: ^{2}} {l[i_opt]: 9.4f} {zNLP[i_opt,j_opt]: 8.2f} ')
-        fn.write(f'{deaths[i_opt,j_opt]: 8.2f} {donor_deaths[i_opt,j_opt]: 8.2f} {tot_deaths[i_opt,j_opt]: 8.2f} ')
-        fn.write(f'{t_n[i_opt,j_opt]: 6.2f} ({dVmin[i_opt,j_opt]: 7.1f},{dVmax[i_opt,j_opt]: 6.1f}) ')
-        for a in A:
-            fn.write(f'{V_tot_opt[a]: 5.0f} ')                    
-        fn.write("\n") 
-
-        fn.write(f'minimum (best zNLP w/ Lagrangian for last lambda) w/ convergence for last LP\n')
-
-        fn.write(f'{i: ^{2}} {j_min[i]: ^{2}} {l[i]: 9.4f} {zNLP[i,j_min[i]]: 8.2f} ')
-        fn.write(f'{deaths[i,j_min[i]]: 8.2f} {donor_deaths[i,j_min[i]]: 8.2f} {tot_deaths[i,j_min[i]]: 8.2f} ')
-        fn.write(f'{t_n[i,j_min[i]]: 6.2f} ({dVmin[i,j_min[i]]: 7.1f},{dVmax[i,j_min[i]]: 6.1f}) ')
-        for a in A:
-            fn.write(f'{V_tot_min[a]: 5.0f} ')                    
-        fn.write("\n\n") 
-    
-        # Verbosity 2
-        if verbosity >= 2:
-            fn.write("Outer Loop over lambda. j_min = iter of inner loop that achieves best wtd deaths\n")
-            fn.write("iter  lambda j_min  zNLP  wtd_deaths  subopt  t_n   conv of V_cal\n")
-            
-            for i1 in range(i+1):
-                fn.write(f'{i1: ^{2}} {l[i1]: 9.4f}  {j_min[i1]: ^2} {zNLP[i1,j_min[i1]]: 8.2f} ')
-                fn.write(f'{z[i1]: 8.2f} {z[i1] - deaths_opt: 9.2f} {t_n[i1,j_min[i1]]: 6.2f} ')
-                fn.write(f'({dVmin[i1,j_min[i1]]: 7.1f},{dVmax[i1,j_min[i1]]: 6.1f})')
-                fn.write("\n")
-            fn.write("\n")
-
-            fn.write("Inner Loop at last i (last lambda)\n")
-            fn.write("iter  zNLP subopt w/in this i wtd_deaths subopt  t_n   conv of V_cal\n")
-            for j1 in range(j+1):
-                fn.write(f'{j1: ^{2}} {zNLP[i,j1]: 8.2f} {zNLP[i,j1] - zNLP[i,j_min[i]]: 9.2f}       ')
-                fn.write(f'{deaths[i,j1]: 8.2f} {deaths[i,j1] - deaths_opt: 9.2f}  {t_n[i,j_min[i]]: 6.2f} ')
-                fn.write(f'({dVmin[i,j1]: 7.1f},{dVmax[i,j1]: 6.1f})')
-                fn.write("\n")
-            fn.write("\n")
-
-        # Verbosity 1
-        if verbosity >= 1:
-            fn.write("Vaccinations: sim of best LP (best j), last lambda (min) \n"
-                    "  day    Vacc by area \n")
-            for t in range(T - T0 + 1):
-                fn.write(f'{t: ^{7}}')
-                for a in A:
-                    fn.write("  " + str(V_table[a, t, i, j_min[i]]) + "  ")
-                fn.write("\n")
-            fn.write("\nOptimal vaccinations \n"
-                    "  day    Vacc by area \n")
-            for t in range(T - T0 + 1):
-                fn.write(f'{t: ^{7}}')
-                for a in A:
-                    fn.write("  " + str(V_table[a, t, i_opt, j_opt]) + "  ")
-                fn.write("\n")
+        o_loop_report()
 
     else: # Simulate only
         fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
         fn.write("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
+        global V_sim
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
         for a1 in A: 
             # Initialize V giving priority to area a1
@@ -285,17 +222,7 @@ def main():
                     V_tot_sim[a] += V[a, t]
                     
             o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim)
-        
-        # Verbosity 1
-        if verbosity >= 1:
-            for a1 in A:
-                fn.write("\nVaccinations, priority to " + a1)
-                fn.write("\n  day    V by area \n")
-                for t in range(T - T0 + 1):
-                    fn.write(f'{t: ^{7}}')
-                    for a in A:
-                        fn.write("  " + str(V_sim[a1, a, t]) + "  ")
-                    fn.write("\n")
+        o_loop_report()
 
 def optimize_inner(l, V): 
     global deaths, donor_deaths, tot_deaths, t_n, zNLP, V_table, \
@@ -959,20 +886,33 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
         except:
             return 0
 
-def o_inner_loop_report():
+def o_loop_report():
     """
-    Outputs inner loop report based on verbosity and (global) simulate_only
+    Outputs loop report based on verbosity and (global) simulate_only
     
     Returns:
     (int) -> 1 on Success, 0 on Fail
     """
     if simulate_only:
         try:
+            # Verbosity 1
+            if verbosity >= 1:
+                for a1 in A:
+                    fn.write("\nVaccinations, priority to " + a1)
+                    fn.write("\n  day    V by area \n")
+                    for t in range(T - T0 + 1):
+                        fn.write(f'{t: ^{7}}')
+                        for a in A:
+                            fn.write("  " + str(V_sim[a1, a, t]) + "  ")
+                        fn.write("\n")
             return 1
         except:
             return 0
     else:
         try:
+            # Verbosity 0
+            fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")
+               
             fn.write( "                           --------deaths-------_\n")
             fn.write( "i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area\n")
             fn.write("first simulation\n")
@@ -998,11 +938,48 @@ def o_inner_loop_report():
             for a in A:
                 fn.write(f'{V_tot_min[a]: 5.0f} ')                    
             fn.write("\n\n") 
+            
+            # Verbosity 2
+            if verbosity >= 2:
+                fn.write("Outer Loop over lambda. j_min = iter of inner loop that achieves best wtd deaths\n")
+                fn.write("iter  lambda j_min  zNLP  wtd_deaths  subopt  t_n   conv of V_cal\n")
+                
+                for i1 in range(i+1):
+                    fn.write(f'{i1: ^{2}} {l[i1]: 9.4f}  {j_min[i1]: ^2} {zNLP[i1,j_min[i1]]: 8.2f} ')
+                    fn.write(f'{z[i1]: 8.2f} {z[i1] - deaths_opt: 9.2f} {t_n[i1,j_min[i1]]: 6.2f} ')
+                    fn.write(f'({dVmin[i1,j_min[i1]]: 7.1f},{dVmax[i1,j_min[i1]]: 6.1f})')
+                    fn.write("\n")
+                fn.write("\n")
+
+                fn.write("Inner Loop at last i (last lambda)\n")
+                fn.write("iter  zNLP subopt w/in this i wtd_deaths subopt  t_n   conv of V_cal\n")
+                for j1 in range(j+1):
+                    fn.write(f'{j1: ^{2}} {zNLP[i,j1]: 8.2f} {zNLP[i,j1] - zNLP[i,j_min[i]]: 9.2f}       ')
+                    fn.write(f'{deaths[i,j1]: 8.2f} {deaths[i,j1] - deaths_opt: 9.2f}  {t_n[i,j_min[i]]: 6.2f} ')
+                    fn.write(f'({dVmin[i,j1]: 7.1f},{dVmax[i,j1]: 6.1f})')
+                    fn.write("\n")
+                fn.write("\n")
+
+            # Verbosity 1
+            if verbosity >= 1:
+                fn.write("Vaccinations: sim of best LP (best j), last lambda (min) \n"
+                        "  day    Vacc by area \n")
+                for t in range(T - T0 + 1):
+                    fn.write(f'{t: ^{7}}')
+                    for a in A:
+                        fn.write("  " + str(V_table[a, t, i, j_min[i]]) + "  ")
+                    fn.write("\n")
+                fn.write("\nOptimal vaccinations \n"
+                        "  day    Vacc by area \n")
+                for t in range(T - T0 + 1):
+                    fn.write(f'{t: ^{7}}')
+                    for a in A:
+                        fn.write("  " + str(V_table[a, t, i_opt, j_opt]) + "  ")
+                    fn.write("\n")
             return 1
         except:
             return 0
-    # Verbosity 0
-    fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")   
+    
 
 ######################################## Script Run ########################################
 if __name__ == '__main__':
