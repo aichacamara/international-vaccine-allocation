@@ -781,10 +781,11 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     N = {}
 
     priority = area_data.find("priority").text
-    if not priority == None:
-        priority = priority.split(sep=",")
-    else:
+    
+    # if there is no priority, assign priority to empty array
+    if priority == None:
         priority = []
+    priority = priority.split(sep=",")
 
     donor = area_data.find("donor").text
     m = area_data.find("m").text
@@ -801,7 +802,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         delta_r[area] = convert_num(child.find("delta_r").text)
         N[area] = convert_num(child.find("N").text)
     n_a = len(A)
-
+    
     # read scenario data
     global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
         p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
@@ -847,7 +848,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     # read params
     global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
         delta, beta, iter_lmt, iter_lmt_search, dT, verbosity, T0,\
-            improving, realloc_flag
+        improving, realloc_flag, t_priority, t_priority_vector  #realloc_flag not currently used
     simulate_only = bool(convert_num(params.find("simulate_only").text))
     lambda_0 = convert_num(params.find("lambda_0").text)
     phi = convert_num(params.find("phi").text)
