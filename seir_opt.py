@@ -13,6 +13,7 @@ import sys
 def simulate_switchover_policy():
     """Runs simulation for switchover
     """
+    global new_priority
     if t_switch is None:
         # allocate vaccine to highest priority area
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
@@ -26,7 +27,6 @@ def simulate_switchover_policy():
                 for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
                     V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
                     for z1 in range(z + 1, n_a):
-                        print(B[t])
                         if z1 > z:          # divide proportion split b/t lower-priority areas
                             V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
                 t_prev = t_next                         # update for next area	 
@@ -42,6 +42,8 @@ def main():
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
     # global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global fn, csv_file #output files
+    
+    global new_priority
 
     # read input file, compute constants
     import_xml(xml_path=os.getcwd() + "/" + input_file)
@@ -232,9 +234,10 @@ def main():
                     V[a1, t] = B[t]
                 continue
              # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
-            new_priority = priority.remove(a1)
-            new_priority = priority.insert(0,a1)
-           
+
+            priority.remove(a1)
+            priority.insert(0,a1)
+
             V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
             t_prev = 0	# initialize previous switching time
             for z in range(n_a):      # area index 0, ..., a_n - 1
@@ -682,7 +685,6 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     N = {}
 
     priority = area_data.find("priority").text
-    print(priority)
     # if there is no priority, assign priority to empty array
     if priority == None:
         priority = []
@@ -1065,17 +1067,23 @@ if __name__ == '__main__':
     parser.add_argument('input', type=str, help='Directory of input xml file')
 
     # Parse the command line
-    args = parser.parse_args()
-
+    args = parser.parse_args()    
+    
     input_dir = args.input
+    
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
-    #print(files)
     
     for f in files:
+        """
+        @TODO
+            Highly suggested to remove the global property of the 
+            `input_file` 
+            `input_filename` 
+            as these files are only used in main() for printing and csv parsing,
+            they can be passed in as parameters
+        """
         global input_file
         global input_filename
         input_filename = f
         input_file = os.path.join(input_dir,input_filename)
-        #print(input_file)
-        #print(input_filename)
         main()
