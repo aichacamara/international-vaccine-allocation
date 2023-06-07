@@ -1,3 +1,4 @@
 # ignore created output files.
 *.out
 /output/*
+*.sh
