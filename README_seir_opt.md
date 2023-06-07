@@ -1,5 +1,32 @@
 seir_opt Documentation	M. Veatch 10/31/22
 -----------------------------------------------------------------------------
+Setup/Installation 
+
+LINUX
+
+Optimization uses Gurobi's python package. To use the Gurobi model install 
+Gurobi onto your local machine here: 
+
+https://www.gurobi.com/downloads/
+
+This will require you to create an account and if you are planning on using 
+a net licence create a file called `gurobi.lic` in an accessible location
+and type the following into a terminal window:
+
+export GRB_LICENSE_FILE=[__path__]/gurobi.lic
+
+from there:
+pip install gurobipy
+or
+pip3 install gurobipy
+
+MAC/OSX
+@TODO
+
+Windows
+@TODO
+
+-----------------------------------------------------------------------------
 Versions
 
 seir_opt2.py	optimizes using iterative LPs or simulates
