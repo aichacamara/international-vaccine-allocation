@@ -34,9 +34,7 @@ def simulate_switchover_policy():
                 t_next =  T	                            # for last area, next switching time is T
                 for t in range(t_prev, t_next):
                     V[A[z], t] = B[t]                      # for last area, no splitting
-        
-
-    
+          
 def main():
     ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
@@ -841,6 +839,7 @@ def o_input_echo():
     try:
         if not simulate_only:
             #output to .csv
+            global csv_file
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I",
