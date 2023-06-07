@@ -578,7 +578,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         return 100000000
 
 def simulate(V):
-    global I, I_V, G
+    global I, I_V, G, m
     # Define state variables, alpha, delta_E, V_star, V_minus
     S = {(a, t): 0 for a in A for t in range(T+1)}     # t=0,...,T b/c computed in diff eq
     S_V = {(a, t): 0 for a in A for t in range(T+1)}
@@ -804,6 +804,8 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     
     if split is not None:
         split = convert_num(split.text)
+    else:
+        split = 0
     
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
