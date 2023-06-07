@@ -38,7 +38,7 @@ def simulate_switchover_policy():
 def main():
     ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
-    # global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
+    global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global fn, csv_file #output files
     
     global new_priority
@@ -839,7 +839,6 @@ def o_input_echo():
     try:
         if not simulate_only:
             #output to .csv
-            global csv_file
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(
                 ["area", "t", "S", "SV", "E", "EV", "I",
@@ -956,6 +955,7 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
             fn.write("\n")
             return 1
         except:
+            print("failed to produce policy report")
             return 0
     else:
         try:
@@ -984,6 +984,7 @@ def o_loop_report():
                         fn.write("\n")
             return 1
         except:
+            print("Failed to produce loop report")
             return 0
     else:
         try:
@@ -1055,6 +1056,7 @@ def o_loop_report():
                     fn.write("\n")
             return 1
         except:
+            print("Failed to produce loop report")
             return 0
     
 
