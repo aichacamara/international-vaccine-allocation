@@ -200,17 +200,13 @@ def main():
         """
         File Run information
         """
-        print(f"""\n
+        if INCLUDE_PRINT: print(f"""\n
               File: {input_filename} 
               Linear Program Count: {LP_count} \t\t {"// WARNING, low LP Count "if LP_count < 5 else ""}
               Infeas Count: {infeas_count} 
               Number of Areas: {len(A)} \t Iteration Limit: {iter_lmt} \t Search Limit: {iter_lmt_search}
               Time Elapsed: {elapsed_time}s"""
               )
-        # print("LP count: ", LP_count, "Infeas count: ", infeas_count, 
-        #         "Time elapsed: ", elapsed_time, "s")
-        # print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
-        #         " Iter_lmt_search: ", iter_lmt_search)
 
     # open output files
     fn = open(fn_base + ".out", "w")
@@ -1090,8 +1086,9 @@ def o_loop_report():
 
 ########################################### Script Run ###########################################
 if __name__ == '__main__':
-    global TIME_TRUNCATE
+    global TIME_TRUNCATE, INCLUDE_PRINT
     TIME_TRUNCATE = 5 # rounded time decimal places
+    INCLUDE_PRINT = True # set to false if print is unwanted
     
     parser = argparse.ArgumentParser()
 
@@ -1106,17 +1103,9 @@ if __name__ == '__main__':
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
     
     for f in files:
-        """
-        @TODO
-            Highly suggested to remove the global property of the 
-            `input_file` 
-            `input_filename` 
-            as these files are only used in main() for printing and csv parsing,
-            they can be passed in as parameters
-        """
         global input_file
         global input_filename
         input_filename = f
         input_file = os.path.join(input_dir,input_filename)
         main()
-    print(f"\n Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
+    if INCLUDE_PRINT: print(f"\n Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
