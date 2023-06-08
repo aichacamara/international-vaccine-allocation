@@ -1,44 +1,29 @@
-seir_opt Documentation	M. Veatch 10/31/22
+seir_opt Documentation	M. Veatch 6/1/23
 -----------------------------------------------------------------------------
-Versions
+Current version:
 
-seir_opt2.py	optimizes using iterative LPs or simulates
-
-seirQP3.py	
-optimizes using QP (at each lambda) or simulates. 
-Recent changes: 
-  MIPgap=.02
-  time limit=600s for each QP
-  record results of QP if status == GRB.TIME_LIMIT  
-  clarified output: suboptimal QP results are counted if time limit reached,
-	removed unused column
-  console output is redirected to output file ..._con.out using sys.stdout
-  output file name changed to include values of T and nu, e.g.,
-	T2_T090_nu0.0.out
-	To change which parameters are in name, look for fn_base
-  csv file name changed from plot_....csv to ..._plot.csv
+seir_opt.py	optimizes using iterative LPs or simulates
 -----------------------------------------------------------------------------
 Usage
 
-To run seir_opt2 or seir_QP3, give the name of the FOLDER containing input files:
+To run, give the name of the FOLDER containing input files:
 
-> python seir_opt2 input_data	
+> python seir_opt input_data	
 
-This does multiple runs, one for each file in this folder. Both programs use the same input file, though not all inputs are used by QP.
+This does multiple runs, one for each file in this folder. Old versions did a single run, given the path to the input file. To read T2.xml in the folder "input_data": 
 
-To run old programs, such as seir_QP2, give the path to the input file. To read T2.xml in the folder "input_data": 
-
-> python seir_QP2 input_data/T2.xml	
+> python seir_opt input_data/T2.xml	
 -----------------------------------------------------------------------------
 Outputs
 
-The subfolder "output" is created. For each input file, seir_opt2 writes two or threee files, e.g.,
+The subfolder "output" is created. For each input file, seir_opt writes two or three files, e.g.,
 
-  C2.3_tsw180.out		output
-  C2.3_tsw180_con.out		console output, i.e., Gurobi
-  C2.3_tsw180_plot.csv		csv file for time plots with R
+  C2.3_nu0.0.out		output
+  C2.3_nu0.0_con.out		console output, i.e., Gurobi
+  C2.3_nu0.0_plot.csv		csv file for time plots with R
 
-seir_QP3 appends "_QP" to the names.
+The output file names are the input file name, followed by the value of the input "nu". 
+To change which input is added to the file name, edit "fn_base = ..." 
 To direct Gurobi output to console, remove "sys.stdout = ..."
 To turn off console (Gurobi) output, change v.Params.LogToConsole from 1 to 0
 
@@ -48,13 +33,7 @@ verbosity >= 0: echo inputs, first sim, optimal, "min" (best LP for last lambda)
 verbosity >= 1: vaccinations by day/area
 verbosity >= 2: outer and inner loop showing progress of algorithm
 
-For QP, the outputs are a subset of this:
-
-verbosity >= 0: echo inputs, first sim, optimal
-verbosity >= 1: vaccinations by day/area
-verbosity >= 2: outer loop showing progress of algorithm
-
-When simulate_only = 1, the initial policy is simulated and a csv file is written. Other output for this option hasn't been done. 
+When simulate_only = 1, the initial policy is simulated. 
 ----------------------------------------------------------------------------
 Plots
 
@@ -97,6 +76,3 @@ All areas have dashed vertical lines at
   t_n = day variant appears
   t_n + L = day variant spreads to other areas
 Each area should only have one line, but I don't know how to do different lines on different plots.
-
-
-  
