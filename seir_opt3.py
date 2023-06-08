@@ -686,7 +686,7 @@ def simulate(V):
     variant_emerge = False
 
     for t in range(T):   # t = 0,...,T-1
-        # compute alpha if variant found. Random time until variant
+        # compute alpha if variant could have emerged. Random time until variant
         if variant_emerge:
             for t1 in range(2*T_D - 1):     # Shift EA left for next t
                 EA[t1] = EA[t1+1]
@@ -751,7 +751,7 @@ def simulate(V):
             D[a, t + 1] = D[a, t] + r_d[a]*p_D*I[a, t] + r_d[a]*p_V_D*I_V[a, t]
             R[a, t + 1] = R[a, t] + r_d[a]*(1 - p_D)*I[a, t] + r_d[a]*(1 - p_V_D)*I_V[a, t]
 
-        ### Compute I_cum = sum over a and t (used to check if varaint emerges and compute aplha),
+        ### Compute I_cum = sum over a and t (used to check if variant emerges and compute aplha),
         # I_max = max over a of sum over t
         I_cum = I_max = 0 # I_cum = sum over a and t, I_max = max over a of sum over t
         for a in A:
@@ -763,7 +763,7 @@ def simulate(V):
                 if I_max < I_current:     # update area that has max infections
                     area_max = a
                     I_max = I_current
-        # If variant hasn't emerged, check for it. 
+        # If variant hasn't emerged, check if variant could have emerged (random time). 
         # If it emerges, compute t_sim = time variant emerges, m = area where variant emerges
         if not variant_emerge:
             if I_cum > n:
