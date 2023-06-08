@@ -9,6 +9,7 @@ import argparse
 import shutil
 import csv
 import sys
+import time
 
 def simulate_switchover_policy():
     """Runs simulation for switchover
@@ -37,7 +38,7 @@ def simulate_switchover_policy():
                     V[A[z], t] = B[t]                      # for last area, no splitting
           
 def main():
-    ## start_time = time.time() #work for SP but not MV
+    start_time = time.time()
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global fn, csv_file #output files
@@ -193,17 +194,23 @@ def main():
                         print("Warning: f is not unimin: y < fx and fx > fb")
                     if (fy > fx and fa < fy):
                         print("Warning: f is not unimin: fy > fx and fa < fy")
-        elapsed_time = 0
-        ## elapsed_time = time.time() - start_time # Worked for SM but not MV
-        print("\nLP count: ", LP_count, "Infeas count: ", infeas_count, 
-                "Time elapsed: ", elapsed_time, "s")
-        print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
-                " Iter_lmt_search: ", iter_lmt_search)
+
+        elapsed_time = round(time.time() - start_time, TIME_TRUNCATE)
+            
+        """
+        File Run information
+        """
+        if INCLUDE_PRINT: print(f"""\n
+              File: {input_filename} 
+              Linear Program Count: {LP_count} \t\t {"// WARNING, low LP Count "if LP_count < 5 else ""}
+              Infeas Count: {infeas_count} 
+              Number of Areas: {len(A)} \t Iteration Limit: {iter_lmt} \t Search Limit: {iter_lmt_search}
+              Time Elapsed: {elapsed_time}s"""
+              )
 
     # open output files
     fn = open(fn_base + ".out", "w")
     csv_file = open(fn_base + "_plot.csv", "w") 
-    
     o_input_echo()
     
     if not simulate_only:     
@@ -1079,6 +1086,10 @@ def o_loop_report():
 
 ########################################### Script Run ###########################################
 if __name__ == '__main__':
+    global TIME_TRUNCATE, INCLUDE_PRINT
+    TIME_TRUNCATE = 5 # rounded time decimal places
+    INCLUDE_PRINT = True # set to false if print is unwanted
+    
     parser = argparse.ArgumentParser()
 
     # First positional argument (this must be present)
@@ -1092,16 +1103,9 @@ if __name__ == '__main__':
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
     
     for f in files:
-        """
-        @TODO
-            Highly suggested to remove the global property of the 
-            `input_file` 
-            `input_filename` 
-            as these files are only used in main() for printing and csv parsing,
-            they can be passed in as parameters
-        """
         global input_file
         global input_filename
         input_filename = f
         input_file = os.path.join(input_dir,input_filename)
         main()
+    if INCLUDE_PRINT: print(f"\n Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
