@@ -14,6 +14,7 @@ def simulate_switchover_policy():
     """Runs simulation for switchover
     """
     global new_priority
+    global V, B
     if t_switch is None:
         # allocate vaccine to highest priority area
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
@@ -297,27 +298,27 @@ def main():
                 V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
                 for t in range(T - T0 + 1): # t=0,...,T-T0+1
                     V[a1, t] = B[t]
-                continue
-             # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
+            else:
+                # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
 
-            priority.remove(a1)
-            priority.insert(0,a1)
+                priority.remove(a1)
+                priority.insert(0,a1)
 
-            V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
-            t_prev = 0	# initialize previous switching time
-            for z in range(n_a):      # area index 0, ..., a_n - 1
-                if z < n_a - 1: 
-                    t_next =  t_switch[z]	                        # set next switching time
-                    for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
-                        V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
-                        for z1 in range(z + 1, n_a):
-                            if z1 > z:          # divide proportion split b/t lower-priority areas
-                                V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
-                    t_prev = t_next                                 # update for next area	 
-                else: 
-                    t_next =  T	                                    # for last area, next switching time is T
-                    for t in range(t_prev, t_next):
-                        V[A[z], t] = B[t]                           # for last area, no splitting
+                V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
+                t_prev = 0	# initialize previous switching time
+                for z in range(n_a):      # area index 0, ..., a_n - 1
+                    if z < n_a - 1: 
+                        t_next =  t_switch[z]	                        # set next switching time
+                        for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
+                            V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
+                            for z1 in range(z + 1, n_a):
+                                if z1 > z:          # divide proportion split b/t lower-priority areas
+                                    V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                        t_prev = t_next                                 # update for next area	 
+                    else: 
+                        t_next =  T	                                    # for last area, next switching time is T
+                        for t in range(t_prev, t_next):
+                            V[A[z], t] = B[t]                           # for last area, no splitting
             # Simulate   
             t_sim, alpha, V_cal, V, D = simulate(V)
             deaths_sim_only = (1 - nu)*D[donor, T] 
@@ -707,20 +708,8 @@ def simulate(V):
 
     if simulate_only:
         # Write the csv (simulate)
-        with open(fn_base + "_plot" + ".csv", "w") as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(
-                ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
-            csv_writer.writerow(
-                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_sim, L])
-            for a in A:
-                for t in range(T + 1):
-                    if t != T:
-                        csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                            I_V[a, t], 0, D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
-                    else:
-                        csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                             I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
+        o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star)
+
     return t_sim, alpha, V_cal, V_star, D
 
 ######################################## INPUT HELPERS ########################################
@@ -864,6 +853,23 @@ def convert_num(num: str): #Converts an input string "num" to float or int
     return int(num)
 
 ######################################## OUTPUT HELPERS ########################################
+
+def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star):
+    """ Outputs to CSV for simulation only
+    """
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(
+        ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
+    csv_writer.writerow(
+        [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_sim, L])
+    for a in A:
+        for t in range(T + 1):
+            if t != T:
+                csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
+                                    I_V[a, t], 0, D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
+            else:
+                csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
+                                        I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
 
 def o_state_equations(fn: TextIOWrapper,
                            num_length: int,
