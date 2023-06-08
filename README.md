@@ -1,4 +1,5 @@
 seir_opt Documentation	M. Veatch 10/31/22
+updated last: A. Cha 06/08/23
 -----------------------------------------------------------------------------
 Setup/Installation 
 
@@ -23,8 +24,40 @@ pip3 install gurobipy
 MAC/OSX
 @TODO
 
-Windows
-@TODO
+WINDOWS
+
+Assuming you have Python,  
+
+Download Gurobi from https://gurobi.com/downloads/  You need the Gurobi Optimizer.  You will need to register. 
+Set up your Gurobi license (see below). 
+
+Install the Python module with "pip install gurobipy". Since pip isn’t working in Command Prompt, use " python -m pip install gurobipy"  
+Insert the following at the beginning of your python program 
+
+  `import gurobipy as gp` 
+
+  `from gurobipy import GRB`
+
+and any other modules needed. 
+Now the python program can call Gurobi. 
+
+ 
+
+Gurobi site license 
+--
+Create a token server client license. It is a plain text file created with NotePad, WordPad, etc.  
+
+Name: gurobi.lic  
+Location: a default/accesible location on your computer, e.g., C:\Users\Mike.Veatch\Documents 
+Contents: TOKENSERVER=gurobi.gordon.edu 
+  or 
+TOKENSERVER=172.27.43.55 
+
+(note) this IP address may not be permanent. 
+You must be on the Gordon network (on campus or VPN) to use this license. 
+
+For testing, you may want to add a line that change the timeout in case the token server is unavailable. The default value is 30 seconds. 
+    SERVERTIMEOUT=10 
 
 -----------------------------------------------------------------------------
 Versions
@@ -44,6 +77,7 @@ Recent changes:
 	T2_T090_nu0.0.out
 	To change which parameters are in name, look for fn_base
   csv file name changed from plot_....csv to ..._plot.csv
+  
 -----------------------------------------------------------------------------
 Usage
 
