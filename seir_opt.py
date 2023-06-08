@@ -10,17 +10,45 @@ import shutil
 import csv
 import sys
 
+def simulate_switchover_policy():
+    """Runs simulation for switchover
+    """
+    global new_priority
+    global V, B
+    if t_switch is None:
+        # allocate vaccine to highest priority area
+        for t in range(T - T0 + 1): # t=0,...,T-T0+1
+            V[priority[0], t] = B[t]     # highest priority
+    else:
+        new_priority = priority # for consistency with simulate_only, where the priorities change
+        t_prev = 0	# initialize previous switching time
+        for z in range(n_a):      # area index 0, ..., n_a - 1
+            if z < n_a - 1: 
+                t_next =  t_switch[z]	            # set next switching time
+                for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
+                    V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                    for z1 in range(z + 1, n_a):
+                        if z1 > z:          # divide proportion split b/t lower-priority areas
+                            V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                t_prev = t_next                         # update for next area	 
+            else: 
+                t_next =  T	                            # for last area, next switching time is T
+                for t in range(t_prev, t_next):
+                    V[A[z], t] = B[t]                      # for last area, no splitting
+          
 def main():
     ## start_time = time.time() #work for SP but not MV
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global fn, csv_file #output files
+    
+    global new_priority
 
     # read input file, compute constants
     import_xml(xml_path=os.getcwd() + "/" + input_file)
     # initialize output filename and directory
     try:
-            os.mkdir(os.getcwd() + "/" + "output")
+        os.mkdir(os.getcwd() + "/" + "output")
     except:
         pass 
     fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_nu{nu:3.1f}' #_nu{nu:3.1f} output file name uses inputs
@@ -46,11 +74,11 @@ def main():
         SV0[a] = rho_V[a]*N[a] - EV0[a] - IV0[a]
         S0[a] = N[a] - E0[a] - EV0[a] - I0[a] - IV0[a] - SV0[a]
         W0[a] = rho[a]*N[a] - SV0[a] - EV0[a] - IV0[a] - rho[a]*E0[a] - rho[a]*I0[a]
-    # Initialize V
+        
+    # Initialize V for initial sim using priority list. Use splitting between areas.
+    global V
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    # allocate vaccine to highest priority area
-    for t in range(T - T0 + 1): # t=0,...,T-T0+1
-        V[priority[0], t] = B[t]     # highest priority
+    simulate_switchover_policy()
 
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
@@ -122,20 +150,20 @@ def main():
                 # Phase 2: Golden ratio search on interval [a, b] with check for unimin
                 # Initialize Phase 2
                 if x1 <= x3:
-                    a = x1
-                    b = x3
+                    a0 = x1
+                    b0 = x3
                     fa = f1
                     fb = f3
 
                 if x1 > x3:
-                    a = x3
-                    b = x1
+                    a0 = x3
+                    b0 = x1
                     fa = f3
                     fb = f1
 
                 # Two more iterations, at x and y
-                x = a + 0.618 * (b - a)  # current larger x value
-                y = b - 0.618 * (b - a)  # current smaller x value
+                x = a0 + 0.618 * (b0 - a0)  # current larger x value
+                y = b0 - 0.618 * (b0 - a0)  # current smaller x value
                 i = i + 1
                 l[i] = x
                 z[i] = optimize_inner(l[i], V)
@@ -149,15 +177,15 @@ def main():
                 # Phase 2 loop
                 while (abs(fx - fy) > delta and i < iter_lmt_search):
                     i = i + 1
-                    if fx > fy:        		    # minimum is in [a,x], so update b
-                        b, fb, x, fx = (x, fx, y, fy)
-                        y = b - 0.618 * (b - a)
+                    if fx > fy:        		    # minimum is in [a1,x], so update b
+                        b0, fb, x, fx = (x, fx, y, fy)
+                        y = b0 - 0.618 * (b0 - a0)
                         l[i] = y
                         z[i] = optimize_inner(l[i], V)
                         fy = z[i]
-                    else:	                    # minimum is in [y,b], so update a
-                        a, fa, y, fy = (y, fy, x, fx)
-                        x = a + 0.618 * (b - a)
+                    else:	                    # minimum is in [y,b], so update a1
+                        a0, fa, y, fy = (y, fy, x, fx)
+                        x = a0 + 0.618 * (b0 - a0)
                         l[i] = x
                         z[i] = optimize_inner(l[i], V)
                         fx = z[i]
@@ -166,7 +194,7 @@ def main():
                     if (fy > fx and fa < fy):
                         print("Warning: f is not unimin: fy > fx and fa < fy")
         elapsed_time = 0
-        ## elapsed_time = time.time() - start_time # Worded for SM but not MV
+        ## elapsed_time = time.time() - start_time # Worked for SM but not MV
         print("\nLP count: ", LP_count, "Infeas count: ", infeas_count, 
                 "Time elapsed: ", elapsed_time, "s")
         print("Number of areas: ", len(A), " Iter_lmt: ", iter_lmt,
@@ -256,7 +284,8 @@ def main():
                 for a in A:
                     fn.write("  " + str(V_table[a, t, i_opt, j_opt]) + "  ")
                 fn.write("\n")
-        o_loop_report()
+        # o_loop_report()
+        
 
     else: # Simulate only
         fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
@@ -264,10 +293,32 @@ def main():
         global V_sim
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
         for a1 in A: 
-            # Initialize V giving priority to area a1
-            V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-            for t in range(T - T0 + 1): # t=0,...,T-T0+1
-                V[a1, t] = B[t]
+            if t_switch is None:
+                # Initialize V giving priority to area a1
+                V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
+                for t in range(T - T0 + 1): # t=0,...,T-T0+1
+                    V[a1, t] = B[t]
+            else:
+                # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
+
+                priority.remove(a1)
+                priority.insert(0,a1)
+
+                V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
+                t_prev = 0	# initialize previous switching time
+                for z in range(n_a):      # area index 0, ..., a_n - 1
+                    if z < n_a - 1: 
+                        t_next =  t_switch[z]	                        # set next switching time
+                        for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
+                            V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
+                            for z1 in range(z + 1, n_a):
+                                if z1 > z:          # divide proportion split b/t lower-priority areas
+                                    V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                        t_prev = t_next                                 # update for next area	 
+                    else: 
+                        t_next =  T	                                    # for last area, next switching time is T
+                        for t in range(t_prev, t_next):
+                            V[A[z], t] = B[t]                           # for last area, no splitting
             # Simulate   
             t_sim, alpha, V_cal, V, D = simulate(V)
             deaths_sim_only = (1 - nu)*D[donor, T] 
@@ -323,7 +374,7 @@ def optimize_inner(l, V):
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
             for a in A:
                 V_table[a, t, 0, 0] = V[a, t]
-        # Compute deaths, zNLP from sim. This zNLP is used in putput if it is best for i = 0 (min)
+        # Compute deaths, zNLP from sim. This zNLP is used in output if it is best for i = 0 (min)
         deaths[0, 0] = (1 - nu)*D[donor, T]
         donor_deaths[0, 0] = D[donor, T]
         tot_deaths[0, 0] = 0
@@ -333,7 +384,7 @@ def optimize_inner(l, V):
         # Use fixed t_n in LP for all j, but include dT more days since t_n may increase
         t_LP = min(math.ceil(t_n[0, 0]) + dT, T) 
         zNLP[0, 0] = deaths[0, 0] + l*sum(I[a, t] for a in A_D for t in range(1, t_LP + 1)) \
-          - (1e-9)*sum(V[a, t]*(T-t) for a in A for t in range(T)) # A_D: no donor in Lagr
+          - (1e-9)*sum(V[a, t]*(T-t) for a in A for t in range(T)) # sum I over A_D: no donor in Lagr
         # Initialize min from this sim (for solve_LP)
         alpha_min = alpha
         V_cal_min = V_cal
@@ -371,7 +422,7 @@ def optimize_inner(l, V):
  
     # Initialize for j loop
     # Use fixed t_n in LP for all j, but include dT more days since t_n may increase
-    t_LP = min(math.ceil(t_n[i, 0]) + dT, T) # For i=1, t_LP was already computed. This doesn't change it.
+    t_LP = min(math.ceil(t_n[i, 0]) + dT, T) # For i=0, t_LP was already computed. This doesn't change it.
     j = 0 # inner loop counter
     eps = eps_prev = epsilon_0 # eps_prev is eps at the previous best sim
     zLP = 1e14              # initialize value of LP. Used for stopping.
@@ -529,7 +580,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         return 100000000
 
 def simulate(V):
-    global I, I_V, G
+    global I, I_V, G, m
     # Define state variables, alpha, delta_E, V_star, V_minus
     S = {(a, t): 0 for a in A for t in range(T+1)}     # t=0,...,T b/c computed in diff eq
     S_V = {(a, t): 0 for a in A for t in range(T+1)}
@@ -626,17 +677,20 @@ def simulate(V):
 
         # check for the variant occuring, do not calculate if variant already emerged
         if not variant_emerge:
-            I_sum = 0
+            I_sum = I_max = 0 # Isum = sum over a and t, Imax = max over a of sum over t
             for a in A:
+                I_current = 0 # sum over t for current a
                 if a != donor: ## donor doesn't contribute to variant
                     for t1 in range(t+1): # t1=0,...,t 
-                        I_sum += I[a, t1]    # sum all infected up to current time
-                ## donor contribute to variant: replaces "if a != donor"
-#               for t1 in range(t+1): # t1=0,...,t 
-#                   I_sum += I[a, t1]    # sum all infected up to current time
-            # If this sum > n, variant emerges. Compute t_sim
+                        I_sum += I[a, t1]     # sum all infected up to current time
+                        I_current += I[a, t1] # sum current area up to current time
+                    if I_max < I_current:     # update area that has max infections
+                        area_max = a
+                        I_max = I_current
+            # If cum infections > n, variant emerges. Compute t_sim and m = area where variant emerges
             if I_sum > n:
                 variant_emerge = True
+                m = area_max # variant emerges in area with max cum I
                 I_tot = 0
                 for a in A:
                     if a != donor:
@@ -654,21 +708,17 @@ def simulate(V):
 
     if simulate_only:
         # Write the csv (simulate)
-        with open(fn_base + "_plot" + ".csv", "w") as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(
-                ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
-            csv_writer.writerow(
-                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_sim, L])
-            for a in A:
-                for t in range(T + 1):
-                    if t != T:
-                        csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                            I_V[a, t], 0, D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
-                    else:
-                        csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                             I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
+        o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star)
+
     return t_sim, alpha, V_cal, V_star, D
+
+######################################## INPUT HELPERS ########################################
+
+def xml_text(element: ET.Element, name: str):
+    try:
+        return convert_num(element.find(name).text)
+    except:
+        return None
 
 def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to the XML file
     root = ET.parse(xml_path).getroot()
@@ -678,8 +728,8 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     params = root.find("params")
 
     # read area data
-    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, donor, m, n, n_a
-    A = []
+    global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, t_switch, split, donor, m, n, n_a
+    A = [] # all areas
     A_D = [] # areas except donor
     gamma = {}
     rho_I_N = {}
@@ -689,13 +739,13 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     N = {}
 
     priority = area_data.find("priority").text
-    if not priority == None:
-        priority = priority.split(sep=",")
-    else:
+    # if there is no priority, assign priority to empty array
+    if priority == None:
         priority = []
+    priority = priority.split(sep=",")
 
     donor = area_data.find("donor").text
-    m = area_data.find("m").text
+    # m = area_data.find("m").text  # computing varaint area, so don't read it
     n = convert_num(area_data.find("n").text)
     for child in area_data.findall("area"):
         area = child.attrib["name"]
@@ -709,10 +759,14 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         delta_r[area] = convert_num(child.find("delta_r").text)
         N[area] = convert_num(child.find("N").text)
     n_a = len(A)
-
+    
     # read scenario data
     global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
         p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
+    
+    # switchover policy
+    global t_switch, split
+    
     T = convert_num(scenario_data.find("T").text)
     B_0 = convert_num(scenario_data.find("B_0").text) 
     nu = convert_num(scenario_data.find("nu").text)
@@ -729,7 +783,20 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     T_D = convert_num(scenario_data.find("T_D").text)
     p = convert_num(scenario_data.find("p").text)
     b_arr = scenario_data.find("b").text
-    v_u= convert_num(scenario_data.find("v_u").text) 
+    v_u = convert_num(scenario_data.find("v_u").text) 
+    t_switch = scenario_data.find("t_switch")
+    split = scenario_data.find("switch_split")
+    
+    if t_switch is not None:
+        t_switch = t_switch.text.split(",")
+        for i in range(len(t_switch)):
+            t_switch[i] = convert_num(t_switch[i])
+    
+    if split is not None:
+        split = convert_num(split.text)
+    else:
+        split = 0
+    
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
         for i in range(len(b_arr)):
@@ -755,7 +822,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     # read params
     global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
         delta, beta, iter_lmt, iter_lmt_search, dT, verbosity, T0,\
-            improving, realloc_flag
+        improving, realloc_flag, t_priority, t_priority_vector  #realloc_flag not currently used
     simulate_only = bool(convert_num(params.find("simulate_only").text))
     lambda_0 = convert_num(params.find("lambda_0").text)
     phi = convert_num(params.find("phi").text)
@@ -767,6 +834,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     iter_lmt_search = convert_num(params.find("iter_lmt_search").text)
     dT = convert_num(params.find("dT").text)
     verbosity = convert_num(params.find("verbosity").text)
+    
 
     # Hard-coded parameters
     T0 = 3
@@ -785,6 +853,23 @@ def convert_num(num: str): #Converts an input string "num" to float or int
     return int(num)
 
 ######################################## OUTPUT HELPERS ########################################
+
+def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star):
+    """ Outputs to CSV for simulation only
+    """
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(
+        ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
+    csv_writer.writerow(
+        [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_sim, L])
+    for a in A:
+        for t in range(T + 1):
+            if t != T:
+                csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
+                                    I_V[a, t], 0, D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
+            else:
+                csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
+                                        I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
 
 def o_state_equations(fn: TextIOWrapper,
                            num_length: int,
@@ -945,6 +1030,7 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
             fn.write("\n")
             return 1
         except:
+            print("failed to produce policy report")
             return 0
     else:
         try:
@@ -973,6 +1059,7 @@ def o_loop_report():
                         fn.write("\n")
             return 1
         except:
+            print("Failed to produce loop report")
             return 0
     else:
         try:
@@ -986,10 +1073,11 @@ def o_loop_report():
             """
             return 1
         except:
+            print("Failed to produce loop report")
             return 0
     
 
-######################################## Script Run ########################################
+########################################### Script Run ###########################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -997,17 +1085,23 @@ if __name__ == '__main__':
     parser.add_argument('input', type=str, help='Directory of input xml file')
 
     # Parse the command line
-    args = parser.parse_args()
-
+    args = parser.parse_args()    
+    
     input_dir = args.input
+    
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
-    #print(files)
     
     for f in files:
+        """
+        @TODO
+            Highly suggested to remove the global property of the 
+            `input_file` 
+            `input_filename` 
+            as these files are only used in main() for printing and csv parsing,
+            they can be passed in as parameters
+        """
         global input_file
         global input_filename
         input_filename = f
         input_file = os.path.join(input_dir,input_filename)
-        #print(input_file)
-        #print(input_filename)
         main()

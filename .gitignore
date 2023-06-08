@@ -2,3 +2,6 @@
 *.out
 /output/*
 *.sh
+
+# created gurobi.log (unique to each machine)
+*.log
