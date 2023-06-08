@@ -346,27 +346,30 @@ improving = 0			1 if LP uses alpha, V_cal for the best policy found so far in th
 Outputs
 --
 The subfolder "output" is created. For each input file, seir_opt2 writes two or threee files, e.g.,
-
+```
   C2.3_tsw180.out		output
   C2.3_tsw180_con.out		console output, i.e., Gurobi
   C2.3_tsw180_plot.csv		csv file for time plots with R
-
+```
 seir_QP3 appends "_QP" to the names.
+
 To direct Gurobi output to console, remove "sys.stdout = ..."
+
 To turn off console (Gurobi) output, change v.Params.LogToConsole from 1 to 0
 
-The verbosity input controls what goes in the output file:
 
+The verbosity input controls what goes in the output file:
+```
 verbosity >= 0: echo inputs, first sim, optimal, "min" (best LP for last lambda)
 verbosity >= 1: vaccinations by day/area
 verbosity >= 2: outer and inner loop showing progress of algorithm
-
+```
 For QP, the outputs are a subset of this:
-
+```
 verbosity >= 0: echo inputs, first sim, optimal
 verbosity >= 1: vaccinations by day/area
 verbosity >= 2: outer loop showing progress of algorithm
-
+```
 When simulate_only = 1, the initial policy is simulated and a csv file is written. Other output for this option hasn't been done. 
 ----------------------------------------------------------------------------
 Plots
