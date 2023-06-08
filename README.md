@@ -182,6 +182,10 @@ main() # initialization, search over lambda (outer loop), compute additional out
 
 Versions
 --
+## Current
+seir_opt.py	optimizes using iterative LPs or simulates
+
+### Deprecated Versions
 seir_opt2.py	optimizes using iterative LPs or simulates
 
 seirQP3.py	
@@ -222,11 +226,9 @@ This does multiple runs, one for each file in this folder. Old versions did a si
 The subfolder "output" is created. For each input file, seir_opt writes two or three files, e.g., 
 
 ```
-  C2.3_nu0.0.out		output 
-
-  C2.3_nu0.0_con.out		console output, i.e., Gurobi 
-
-  C2.3_nu0.0_plot.csv		csv file for time plots with R 
+  C2.3_nu0.0.out		output
+  C2.3_nu0.0_con.out		console output, i.e., Gurobi
+  C2.3_nu0.0_plot.csv		csv file for time plots with R
 ```
 
 The output file names are the input file name, followed by the value of the input "nu".  
