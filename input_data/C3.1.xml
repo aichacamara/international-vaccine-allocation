@@ -61,7 +61,7 @@
   </scenario_data>
 
   <params>
-    <simulate_only>1</simulate_only>      <!-- If 1, only do simulate-->
+    <simulate_only>0</simulate_only>      <!-- If 1, only do simulate-->
     <lambda_0>.001</lambda_0>             <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
     <epsilon_0>1000</epsilon_0>           <!-- exploration tolerance for LP V_cal -->

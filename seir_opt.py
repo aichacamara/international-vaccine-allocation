@@ -283,7 +283,8 @@ def main():
                 for a in A:
                     fn.write("  " + str(V_table[a, t, i_opt, j_opt]) + "  ")
                 fn.write("\n")
-        o_loop_report()
+        # o_loop_report()
+        
 
     else: # Simulate only
         fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
