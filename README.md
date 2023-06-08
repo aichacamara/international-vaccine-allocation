@@ -182,7 +182,7 @@ main() # initialization, search over lambda (outer loop), compute additional out
 
 Versions
 --
-## Current
+### Current
 seir_opt.py	optimizes using iterative LPs or simulates
 
 ### Deprecated Versions
