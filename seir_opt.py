@@ -459,7 +459,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         vbas = v.getAttr("VBasis", v.getVars())
         # psol = v.getAttr("x", v.getVars())
         cbas = v.getAttr("CBasis", v.getConstrs())
-        # dsol = v.getAttr("Pi", v.getVars())
+        # dsol = v.getAttr("Pi", v.getConstrs())
         
 
     """END OF WARM START CODE BLOCK
@@ -527,9 +527,9 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         """WARM START CODE BLOCK
         """
         v.setAttr("VBasis", v.getVars(), vbas)
-        # v.setAttr("x", v.getVars(), psol)
+        # v.setAttr("PStart", v.getVars(), psol)
         v.setAttr("CBasis", v.getConstrs(), cbas)
-        # v.setAttr("Pi", v.getVars(), dsol)        
+        # v.setAttr("DStart", v.getConstrs(), dsol)        
         """END OF WARM START CODE BLOCK
         """
     
