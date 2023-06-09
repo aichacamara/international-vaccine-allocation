@@ -60,7 +60,6 @@ def main():
     fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_nu{nu:3.1f}' #_nu{nu:3.1f} output file name uses inputs
     ##sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
-    time_ = time.time()
     # Initialize state variables
     S0 = {a: 0 for a in A}
     SV0 = {a: 0 for a in A}
@@ -137,9 +136,7 @@ def main():
         
         i = 0    # outer iteration
         phase = 1
-        time_ = time.time()
         z[i] = optimize_inner(l[i], V)
-        print(f'Iteration 0 Time: {time.time() - time_}')
         print(f'ENDOF iteration 0 \n')
         
         if iter_lmt_search > 1:
@@ -395,12 +392,10 @@ def optimize_inner(l, V):
         LP_count += 1
         zLP_prev = zLP
         # solve LP
-        time_ = time.time()
         if improving == 1:
             zLP = solve_LP(l, t_LP, alpha_min, V_cal_min, eps)  # Improving: alpha_min, V_cal_min are best for this i
         else:
             zLP = solve_LP(l, t_LP, alpha, V_cal, eps)   # Not improving: alpha, V_cal from sim of current LP
-        print(f'Solve LP iteration total time: {time.time() - time_}\n')
         if v.status == GRB.OPTIMAL: # If LP infeas, update eps and iterate. All remaining j likely infeas. 
             V = {(a, t): V1[a, t].x for a in A for t in range(T)} # update V using optimal V1 from LP
             t_n[i, j], alpha, V_cal, V, D = simulate(V)   # simulate LP solution 
@@ -462,25 +457,20 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     """
     # Warm start using bases (can also use solution)
     if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
-        time_ = time.time()
         vbas = v.getAttr("VBasis", v.getVars())
         # psol = v.getAttr("x", v.getVars())
         cbas = v.getAttr("CBasis", v.getConstrs())
         # dsol = v.getAttr("Pi", v.getVars())
         
 
-        print(f"Warm Start Copy Time: {time.time() - time_}")
     """END OF WARM START CODE BLOCK
     """
-    time_ = time.time()
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
         - (1e-9)*sum(V1[a, t]*(T - t) for a in A for t in range(T)), GRB.MINIMIZE)  
-    print(f'Objective Init Time: {time.time() - time_}')
     # Some constraints change with alpha, V_cal (inner loop). Rewrite them all.
     if LP_count - infeas_count > 1:
         v.remove([constraint for constraint in v.getConstrs()]) # Remove all constraints
 
-    time_ = time.time()
     v.addConstrs((V1[donor, t] <= p_k*B[t]
                  for t in range(T - T0 + 1)), "Policy_donor_limit")
     v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T - T0 + 1)), "Vaccine_budget")
@@ -532,20 +522,15 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
                  for a in A for t in range(1, T)), "V_cal_upper_bd")
     v.addConstrs((G[a, t]*I1[a, t] + G[a, t]*p_e*IV1[a, t] >=  max(V_cal[a, t] - eps, 0) ##V_cal[a, t] - eps #*(t/T) ##*(t/T)^2 #Behavior 
                  for a in A for t in range(1, T)), "V_cal_lower_bd")
-    print(f'Contraint Init Time: {time.time() - time_}')
     
     if LP_count -infeas_count > 1: # Warm start using VBasis/CBasis if v.status == GRB.OPTIMAL: #
-        time_ = time.time()
         v.update() # Must update to refer to new constraints
-        print(f'Vector Update Time: {time.time() - time_}')
         """WARM START CODE BLOCK
         """
-        time_ = time.time()
         v.setAttr("VBasis", v.getVars(), vbas)
         # v.setAttr("x", v.getVars(), psol)
         v.setAttr("CBasis", v.getConstrs(), cbas)
         # v.setAttr("Pi", v.getVars(), dsol)        
-        print(f"Warm Start Replace Time: {time.time() - time_}")   
         """END OF WARM START CODE BLOCK
         """
     
@@ -556,7 +541,6 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     global gurobi_optimization_time
     t0 = time.time()        
     v.optimize()
-    print(f"LP Optimization time: {time.time() - t0}")
     gurobi_optimization_time += time.time() - t0
     
     if v.status == GRB.OPTIMAL:
