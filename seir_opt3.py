@@ -49,19 +49,18 @@ def main():
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
     new_priority = priority # for consistency with simulate_only, where the priorities change
     t_prev = 0	# initialize previous switching time
-    for z in range(n_a):      # area index 0, ..., a_n - 1
-        if z < n_a - 1: 
-            t_next =  t_switch[z]	            # set next switching time
+    for q in range(n_a):      # area index 0, ..., a_n - 1
+        if q < n_a - 1: 
+            t_next =  t_switch[q]	            # set next switching time
             for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
-                V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
-                for z1 in range(z + 1, n_a):
-                    if z1 > z:          # divide proportion split b/t lower-priority areas
-                        V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                V[new_priority[q], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                for q1 in range(q + 1, n_a):    # divide proportion split b/t lower-priority areas
+                        V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
             t_prev = t_next                         # update for next area	 
         else: 
             t_next =  T	                            # for last area, next switching time is T
             for t in range(t_prev, t_next):
-                V[A[z], t] = B[t]                      # for last area, no splitting
+                V[A[q], t] = B[t]                      # for last area, no splitting
 
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
@@ -202,7 +201,7 @@ def main():
                     csv_writer.writerow(
                         [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
                             IV1[a, t].x, 0, D1[a, t].x, R1[a, t].x, W1[a, t].x, 
-                            V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] 
+                            V_table[a, t, i_opt, j_opt], t_n[i_opt,j_opt], L] 
                         )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
  
     # Write output file
@@ -363,19 +362,19 @@ def main():
                     if a != a1: new_priority.append(a)
                 V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
                 t_prev = 0	# initialize previous switching time
-                for z in range(n_a):      # area index 0, ..., a_n - 1
-                    if z < n_a - 1: 
-                        t_next =  t_switch[z]	                        # set next switching time
+                for q in range(n_a):      # area index 0, ..., a_n - 1
+                    if q < n_a - 1: 
+                        t_next =  t_switch[q]	                        # set next switching time
                         for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
-                            V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
-                            for z1 in range(z + 1, n_a):
-                                if z1 > z:          # divide proportion split b/t lower-priority areas
-                                    V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                            V[new_priority[q], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
+                            for q1 in range(q + 1, n_a):
+                                if q1 > q:          # divide proportion split b/t lower-priority areas
+                                    V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
                         t_prev = t_next                                 # update for next area	 
                     else: 
                         t_next =  T	                                    # for last area, next switching time is T
                         for t in range(t_prev, t_next):
-                            V[A[z], t] = B[t]                           # for last area, no splitting
+                            V[A[q], t] = B[t]                           # for last area, no splitting
 
                 # Simulate   
                 t_sim, alpha, V_cal, V, D = simulate(V)
@@ -561,14 +560,14 @@ def optimize_inner(l, V):
     return deaths[i, j_min[i]]
 
 def solve_LP(l, t_LP, alpha, V_cal, eps):
-    global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
+#    global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
 
     # Warm start using bases (can also use solution)
     if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
-        vbas = {i: v.getVars()[i].VBasis for i in range(v.NumVars)} # Save basis for variables
-        ##psol = {i: v.getVars()[i].x for i in range(v.NumVars)}
-        cbas = {i: v.getConstrs()[i].CBasis for i in range(v.NumConstrs)} # Save basis for constraints (dual)
-        ##dsol = {i: v.getConstrs()[i].Pi for i in range(v.NumConstrs)}
+        vbas = {q: v.getVars()[q].VBasis for q in range(v.NumVars)} # Save basis for variables
+        ##psol = {q: v.getVars()[q].x for q in range(v.NumVars)}
+        cbas = {q: v.getConstrs()[q].CBasis for q in range(v.NumConstrs)} # Save basis for constraints (dual)
+        ##dsol = {q: v.getConstrs()[q].Pi for q in range(v.NumConstrs)}
 
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
         - (1e-9)*sum(V1[a, t]*(T - t) for a in A for t in range(T)), GRB.MINIMIZE)  
@@ -631,12 +630,12 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
 
     if LP_count -infeas_count > 1: # Warm start using VBasis/CBasis if v.status == GRB.OPTIMAL: #
         v.update() # Must update to refer to new constraints
-        for i in range(v.NumVars):
-            v.getVars()[i].VBasis = vbas[i]
-            #v.getVars()[i].PStart = psol[i]
-        for i in range(v.NumConstrs):
-            v.getConstrs()[i].CBasis = cbas[i]
-            #v.getConstrs()[i].DStart = dsol[i]   
+        for q in range(v.NumVars):
+            v.getVars()[q].VBasis = vbas[q1]
+            #v.getVars()[q].PStart = psol[q]
+        for q in range(v.NumConstrs):
+            v.getConstrs()[q].CBasis = cbas[q]
+            #v.getConstrs()[q].DStart = dsol[q]   
     v.optimize()
     if v.status == GRB.OPTIMAL:
         return v.ObjVal
@@ -658,7 +657,6 @@ def simulate(V):
     I = {(a, t): 0 for a in A for t in range(T+1)}   
     I_V = {(a, t): 0 for a in A for t in range(T+1)}
     R = {(a, t): 0 for a in A for t in range(T+1)}
-    #H = {(a, t): 0 for a in A for t in range(T+1)}
     D = {(a, t): 0 for a in A for t in range(T+1)}
     W = {(a, t): 0 for a in A for t in range(T+1)}
     V_cal = {(a, t): 0 for a in A for t in range(T+1)}  # t=0,...,T b/c used in output
