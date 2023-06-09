@@ -89,8 +89,28 @@ def main():
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
         v = gp.Model("vaccine_opt")
         v.Params.LogToConsole = 0 # 1: Gurobi output turned on
-        v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum.
-        #v.Params.Method = 2 # 2: barrier method, -1: default: automatic; for LP, usually concurrently runs all 3 methods 
+        """
+        WARM START CODE BLOCK
+        """
+        # v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum.
+        """
+        ENDOF
+        """
+        
+        
+        """
+        Linear Program Solution Methods
+        
+        0: Primal
+        1: Dual Simplex
+        2: Barrier
+        
+        -1 (Default): Concurrently runs all of the above
+        """
+        v.Params.Method = 0
+        """
+        ENDOF
+        """
         # LP variables are S1 for state var S, etc. All are continuous and nonnegative by default.
         S1 = v.addVars(A, range(1, T + 1), name="S1")          # t = 1, ..., T
         SV1 = v.addVars(A, range(1, T + 1), name="SV1")
