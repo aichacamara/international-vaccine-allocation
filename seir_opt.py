@@ -10,6 +10,7 @@ import shutil
 import csv
 import sys
 import time
+import copy
 
 def simulate_switchover_policy():
     """Runs simulation for switchover
@@ -23,14 +24,14 @@ def simulate_switchover_policy():
     else:
         new_priority = priority # for consistency with simulate_only, where the priorities change
         t_prev = 0	# initialize previous switching time
-        for z in range(n_a):      # area index 0, ..., n_a - 1
-            if z < n_a - 1: 
-                t_next =  t_switch[z]	            # set next switching time
+        for q in range(n_a):      # area index 0, ..., n_a - 1
+            if q < n_a - 1: 
+                t_next =  t_switch[q]	            # set next switching time
                 for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
-                    V[new_priority[z], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
-                    for z1 in range(z + 1, n_a):
-                        if z1 > z:          # divide proportion split b/t lower-priority areas
-                            V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                    V[new_priority[q], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                    for q1 in range(q + 1, n_a):
+                        if q1 > q:          # divide proportion split b/t lower-priority areas
+                            V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
                 t_prev = t_next                         # update for next area	 
             else: 
                 t_next =  T	                            # for last area, next switching time is T
@@ -59,6 +60,7 @@ def main():
     fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_nu{nu:3.1f}' #_nu{nu:3.1f} output file name uses inputs
     ##sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
 
+    time_ = time.time()
     # Initialize state variables
     S0 = {a: 0 for a in A}
     SV0 = {a: 0 for a in A}
@@ -92,7 +94,7 @@ def main():
         """
         WARM START CODE BLOCK
         """
-        # v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum.
+        v.Params.LPWarmStart = 2    # Allows presolve with PStart, which otherwise might prevent presolve. See PStart docum.
         """
         ENDOF
         """
@@ -135,13 +137,17 @@ def main():
         
         i = 0    # outer iteration
         phase = 1
+        time_ = time.time()
         z[i] = optimize_inner(l[i], V)
+        print(f'Iteration 0 Time: {time.time() - time_}')
+        print(f'ENDOF iteration 0 \n')
+        
         if iter_lmt_search > 1:
             # Iterations 1 and 2
             i = 1
             z[i] = optimize_inner(l[i], V)
             fL = z[i]  # f at left end pt
-
+            
             i = 2
             z[i] = optimize_inner(l[i], V)
             fR = z[i]  # f at right end pt
@@ -179,7 +185,7 @@ def main():
                     a0 = x1
                     b0 = x3
                     fa = f1
-                    fb = f3
+                    fb = f3Warm 
 
                 if x1 > x3:
                     a0 = x3
@@ -261,14 +267,14 @@ def main():
 
                 V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
                 t_prev = 0	# initialize previous switching time
-                for z in range(n_a):      # area index 0, ..., a_n - 1
-                    if z < n_a - 1: 
-                        t_next =  t_switch[z]	                        # set next switching time
+                for q in range(n_a):      # area index 0, ..., a_n - 1
+                    if q < n_a - 1: 
+                        t_next =  t_switch[q]	                        # set next switching time
                         for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
-                            V[new_priority[z], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
-                            for z1 in range(z + 1, n_a):
-                                if z1 > z:          # divide proportion split b/t lower-priority areas
-                                    V[new_priority[z1], t] = B[t] * split / (n_a - 1 - z)
+                            V[new_priority[q], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
+                            for q1 in range(q + 1, n_a):
+                                if q1 > q:          # divide proportion split b/t lower-priority areas
+                                    V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
                         t_prev = t_next                                 # update for next area	 
                     else: 
                         t_next =  T	                                    # for last area, next switching time is T
@@ -389,10 +395,12 @@ def optimize_inner(l, V):
         LP_count += 1
         zLP_prev = zLP
         # solve LP
+        time_ = time.time()
         if improving == 1:
             zLP = solve_LP(l, t_LP, alpha_min, V_cal_min, eps)  # Improving: alpha_min, V_cal_min are best for this i
         else:
             zLP = solve_LP(l, t_LP, alpha, V_cal, eps)   # Not improving: alpha, V_cal from sim of current LP
+        print(f'Solve LP iteration: {time.time() - time_}\n')
         if v.status == GRB.OPTIMAL: # If LP infeas, update eps and iterate. All remaining j likely infeas. 
             V = {(a, t): V1[a, t].x for a in A for t in range(T)} # update V using optimal V1 from LP
             t_n[i, j], alpha, V_cal, V, D = simulate(V)   # simulate LP solution 
@@ -448,25 +456,29 @@ def optimize_inner(l, V):
     return deaths[i, j_min[i]]
 
 def solve_LP(l, t_LP, alpha, V_cal, eps):
-    global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
+    # global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
 
     """WARM START CODE BLOCK
     """
     # Warm start using bases (can also use solution)
-    # if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
-    #     #vbas = {i: v.getVars()[i].VBasis for i in range(v.NumVars)} # Save basis for variables
-    #     psol = {i: v.getVars()[i].x for i in range(v.NumVars)}
-    #     #cbas = {i: v.getConstrs()[i].CBasis for i in range(v.NumConstrs)} # Save basis for constraints (dual)
-    #     dsol = {i: v.getConstrs()[i].Pi for i in range(v.NumConstrs)}
+    if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
+        time_ = time.time()
+        vbas = {q: v.getVars()[q].VBasis for q in range(v.NumVars)} # Save basis for variables
+        # psol = {q: v.getVars()[q].x for q in range(v.NumVars)}
+        cbas = {q: v.getConstrs()[q].CBasis for q in range(v.NumConstrs)} # Save basis for constraints (dual)
+        # dsol = {q: v.getConstrs()[q].Pi for q in range(v.NumConstrs)}
+        print(f"Warm Start Copy Time: {time.time() - time_}")
     """END OF WARM START CODE BLOCK
     """
+    time_ = time.time()
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
         - (1e-9)*sum(V1[a, t]*(T - t) for a in A for t in range(T)), GRB.MINIMIZE)  
-    
+    print(f'Objective Init Time: {time.time() - time_}')
     # Some constraints change with alpha, V_cal (inner loop). Rewrite them all.
     if LP_count - infeas_count > 1:
         v.remove([constraint for constraint in v.getConstrs()]) # Remove all constraints
 
+    time_ = time.time()
     v.addConstrs((V1[donor, t] <= p_k*B[t]
                  for t in range(T - T0 + 1)), "Policy_donor_limit")
     v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T - T0 + 1)), "Vaccine_budget")
@@ -518,18 +530,23 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
                  for a in A for t in range(1, T)), "V_cal_upper_bd")
     v.addConstrs((G[a, t]*I1[a, t] + G[a, t]*p_e*IV1[a, t] >=  max(V_cal[a, t] - eps, 0) ##V_cal[a, t] - eps #*(t/T) ##*(t/T)^2 #Behavior 
                  for a in A for t in range(1, T)), "V_cal_lower_bd")
-
+    print(f'Contraint Init Time: {time.time() - time_}')
+    
     if LP_count -infeas_count > 1: # Warm start using VBasis/CBasis if v.status == GRB.OPTIMAL: #
+        time_ = time.time()
         v.update() # Must update to refer to new constraints
-        
+        print(f'Vector Update Time: {time.time() - time_}')
         """WARM START CODE BLOCK
         """
-        # for i in range(v.NumVars):
-        #     #v.getVars()[i].VBasis = vbas[i]
-        #     v.getVars()[i].PStart = psol[i]
-        # for i in range(v.NumConstrs):
-        #     #v.getConstrs()[i].CBasis = cbas[i]
-        #     v.getConstrs()[i].DStart = dsol[i]   
+        time_ = time.time()
+        for q in range(v.NumVars):
+            v.getVars()[q].VBasis = vbas[q]
+            # v.getVars()[q].PStart = psol[q]
+        for q in range(v.NumConstrs):
+            v.getConstrs()[q].CBasis = cbas[q]
+            # v.getConstrs()[q].DStart = dsol[q]   
+            
+        print(f"Warm Start Replace Time: {time.time() - time_}")   
         """END OF WARM START CODE BLOCK
         """
     
@@ -985,7 +1002,7 @@ def o_input_echo():
                     csv_writer.writerow(
                         [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
                             IV1[a, t].x, 0, D1[a, t].x, R1[a, t].x, W1[a, t].x, 
-                            V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] 
+                            V_table[a, t, i_opt, j_opt], t_n[i_opt,j_opt], L] 
                         )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
         
     
