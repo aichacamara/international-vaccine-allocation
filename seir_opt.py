@@ -137,7 +137,6 @@ def main():
         i = 0    # outer iteration
         phase = 1
         z[i] = optimize_inner(l[i], V)
-        print(f'ENDOF iteration 0 \n')
         
         if iter_lmt_search > 1:
             # Iterations 1 and 2
