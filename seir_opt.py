@@ -41,8 +41,13 @@ def main():
     start_time = time.time()
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, l, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
-    
     global new_priority
+
+    ############## TIMING VARIABLE ##############
+    global gurobi_optimization_time
+    gurobi_optimization_time = 0
+    #############################################
+    
 
     # read input file, compute constants
     import_xml(xml_path=os.getcwd() + "/" + input_file)
@@ -196,7 +201,7 @@ def main():
                         print("Warning: f is not unimin: fy > fx and fa < fy")
 
         elapsed_time = round(time.time() - start_time, TIME_TRUNCATE)
-            
+        
         """
         File Run information
         """
@@ -515,7 +520,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     global gurobi_optimization_time
     t0 = time.time()        
     v.optimize()
-    gurobi_optimization_time = time.time() - t0
+    gurobi_optimization_time += time.time() - t0
     
     if v.status == GRB.OPTIMAL:
         return v.ObjVal
