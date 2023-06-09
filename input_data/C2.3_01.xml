@@ -56,13 +56,15 @@
     <lambda_0>.001</lambda_0>             <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
     <epsilon_0>1000</epsilon_0>           <!-- exploration tolerance for LP V_cal -->
-    <delta_I>0.001</delta_I>              <!-- 0.001 termination tolerance for LP -->
-    <delta>0.1</delta>                    <!-- termination tolerance for lambda -->
+    <delta_I>0</delta_I>              <!-- 0.001 termination tolerance for LP -->
+    <delta>0</delta>                    <!-- termination tolerance for lambda -->
     <beta>0.8</beta>                      <!-- convergence parameter -->
-    <iter_lmt>3</iter_lmt>                <!-- iteration limit for LP -->
-    <iter_lmt_search>5</iter_lmt_search>  <!-- iteration limit for lambda -->
+
+    <!-- ITERATION LIMITS -->
+    <iter_lmt>10</iter_lmt>                <!-- iteration limit for LP -->
+    <iter_lmt_search>20</iter_lmt_search>  <!-- iteration limit for lambda -->
+
     <dT>4</dT>                            <!-- days after t_n[0] in Lagr (t_LP). Set >= T to use all t -->
     <verbosity>2</verbosity>              <!-- 0 least verbose output ... 2 most verbose -->
-  
   </params>
 </data>

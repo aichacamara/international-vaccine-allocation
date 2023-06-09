@@ -205,7 +205,8 @@ def main():
               Linear Program Count: {LP_count} \t\t {"// WARNING, low LP Count "if LP_count < 5 else ""}
               Infeas Count: {infeas_count} 
               Number of Areas: {len(A)} \t Iteration Limit: {iter_lmt} \t Search Limit: {iter_lmt_search}
-              Time Elapsed: {elapsed_time}s"""
+              Time Elapsed: {elapsed_time}s
+              Gurobi Optimize Time: {round(gurobi_optimization_time, TIME_TRUNCATE)}s \t Program Run Time: {round(elapsed_time-gurobi_optimization_time, TIME_TRUNCATE)}"""
               )
 
     # open output files
@@ -293,7 +294,6 @@ def main():
                 fn.write("\n")
         # o_loop_report()
         
-
     else: # Simulate only
         fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
         fn.write("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
@@ -501,13 +501,16 @@ def optimize_inner(l, V):
 def solve_LP(l, t_LP, alpha, V_cal, eps):
     global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
 
+    """WARM START CODE BLOCK
+    """
     # Warm start using bases (can also use solution)
-    if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
-        vbas = {i: v.getVars()[i].VBasis for i in range(v.NumVars)} # Save basis for variables
-        ##psol = {i: v.getVars()[i].x for i in range(v.NumVars)}
-        cbas = {i: v.getConstrs()[i].CBasis for i in range(v.NumConstrs)} # Save basis for constraints (dual)
-        ##dsol = {i: v.getConstrs()[i].Pi for i in range(v.NumConstrs)}
-
+    # if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
+    #     #vbas = {i: v.getVars()[i].VBasis for i in range(v.NumVars)} # Save basis for variables
+    #     psol = {i: v.getVars()[i].x for i in range(v.NumVars)}
+    #     #cbas = {i: v.getConstrs()[i].CBasis for i in range(v.NumConstrs)} # Save basis for constraints (dual)
+    #     dsol = {i: v.getConstrs()[i].Pi for i in range(v.NumConstrs)}
+    """END OF WARM START CODE BLOCK
+    """
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
         - (1e-9)*sum(V1[a, t]*(T - t) for a in A for t in range(T)), GRB.MINIMIZE)  
     
@@ -569,13 +572,27 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
 
     if LP_count -infeas_count > 1: # Warm start using VBasis/CBasis if v.status == GRB.OPTIMAL: #
         v.update() # Must update to refer to new constraints
-        for i in range(v.NumVars):
-            v.getVars()[i].VBasis = vbas[i]
-            #v.getVars()[i].PStart = psol[i]
-        for i in range(v.NumConstrs):
-            v.getConstrs()[i].CBasis = cbas[i]
-            #v.getConstrs()[i].DStart = dsol[i]   
+        
+        """WARM START CODE BLOCK
+        """
+        # for i in range(v.NumVars):
+        #     #v.getVars()[i].VBasis = vbas[i]
+        #     v.getVars()[i].PStart = psol[i]
+        # for i in range(v.NumConstrs):
+        #     #v.getConstrs()[i].CBasis = cbas[i]
+        #     v.getConstrs()[i].DStart = dsol[i]   
+        """END OF WARM START CODE BLOCK
+        """
+    
+    """
+    SPECIFIC OPTIMIZATION TIME
+    (speedup not available by code quality)
+    """
+    global gurobi_optimization_time
+    t0 = time.time()        
     v.optimize()
+    gurobi_optimization_time = time.time() - t0
+    
     if v.status == GRB.OPTIMAL:
         return v.ObjVal
     elif v.status == GRB.INFEASIBLE:
@@ -1087,7 +1104,7 @@ def o_loop_report():
 ########################################### Script Run ###########################################
 if __name__ == '__main__':
     global TIME_TRUNCATE, INCLUDE_PRINT
-    TIME_TRUNCATE = 5 # rounded time decimal places
+    TIME_TRUNCATE = 4 # rounded time decimal places
     INCLUDE_PRINT = True # set to false if print is unwanted
     
     parser = argparse.ArgumentParser()
@@ -1107,5 +1124,6 @@ if __name__ == '__main__':
         global input_filename
         input_filename = f
         input_file = os.path.join(input_dir,input_filename)
-        main()
+        if(input_filename.endswith(".xml")):
+            main()
     if INCLUDE_PRINT: print(f"\n Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
