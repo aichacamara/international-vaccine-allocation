@@ -400,7 +400,7 @@ def optimize_inner(l, V):
             zLP = solve_LP(l, t_LP, alpha_min, V_cal_min, eps)  # Improving: alpha_min, V_cal_min are best for this i
         else:
             zLP = solve_LP(l, t_LP, alpha, V_cal, eps)   # Not improving: alpha, V_cal from sim of current LP
-        print(f'Solve LP iteration: {time.time() - time_}\n')
+        print(f'Solve LP iteration total time: {time.time() - time_}\n')
         if v.status == GRB.OPTIMAL: # If LP infeas, update eps and iterate. All remaining j likely infeas. 
             V = {(a, t): V1[a, t].x for a in A for t in range(T)} # update V using optimal V1 from LP
             t_n[i, j], alpha, V_cal, V, D = simulate(V)   # simulate LP solution 
@@ -463,10 +463,12 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     # Warm start using bases (can also use solution)
     if LP_count - infeas_count > 1: #if v.status == GRB.OPTIMAL: 
         time_ = time.time()
-        vbas = {q: v.getVars()[q].VBasis for q in range(v.NumVars)} # Save basis for variables
-        # psol = {q: v.getVars()[q].x for q in range(v.NumVars)}
-        cbas = {q: v.getConstrs()[q].CBasis for q in range(v.NumConstrs)} # Save basis for constraints (dual)
-        # dsol = {q: v.getConstrs()[q].Pi for q in range(v.NumConstrs)}
+        vbas = v.getAttr("VBasis", v.getVars())
+        # psol = v.getAttr("x", v.getVars())
+        cbas = v.getAttr("CBasis", v.getConstrs())
+        # dsol = v.getAttr("Pi", v.getVars())
+        
+
         print(f"Warm Start Copy Time: {time.time() - time_}")
     """END OF WARM START CODE BLOCK
     """
@@ -539,13 +541,10 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         """WARM START CODE BLOCK
         """
         time_ = time.time()
-        for q in range(v.NumVars):
-            v.getVars()[q].VBasis = vbas[q]
-            # v.getVars()[q].PStart = psol[q]
-        for q in range(v.NumConstrs):
-            v.getConstrs()[q].CBasis = cbas[q]
-            # v.getConstrs()[q].DStart = dsol[q]   
-            
+        v.setAttr("VBasis", v.getVars(), vbas)
+        # v.setAttr("x", v.getVars(), psol)
+        v.setAttr("CBasis", v.getConstrs(), cbas)
+        # v.setAttr("Pi", v.getVars(), dsol)        
         print(f"Warm Start Replace Time: {time.time() - time_}")   
         """END OF WARM START CODE BLOCK
         """
@@ -557,6 +556,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     global gurobi_optimization_time
     t0 = time.time()        
     v.optimize()
+    print(f"LP Optimization time: {time.time() - t0}")
     gurobi_optimization_time += time.time() - t0
     
     if v.status == GRB.OPTIMAL:
