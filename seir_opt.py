@@ -1131,4 +1131,8 @@ if __name__ == '__main__':
         input_file = os.path.join(input_dir,input_filename)
         if(input_filename.endswith(".xml")):
             main()
-    if INCLUDE_PRINT & USED_OPTIMIZATION: print(f"\n Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
+    
+    if INCLUDE_PRINT: 
+        print("\n")
+        if (USED_OPTIMIZATION):
+            print(f"Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
