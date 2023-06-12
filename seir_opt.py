@@ -955,7 +955,6 @@ def o_optimize_output(l,z,i):
                 fn.write("  " + str(V_table[a, t, i_opt, j_opt]) + "  ")
             fn.write("\n")
         
-        
 def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star,alpha):
     """ Outputs to CSV for simulation only
     """
