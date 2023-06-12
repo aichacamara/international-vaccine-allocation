@@ -781,7 +781,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     v_l = {} 
     v_u = {}
     g = {}
-    if v_input: # linear behavior
+    if v_input is not None: # linear behavior
         for a in A:
             v_l[a] = 0
             v_u[a] = v_input 
