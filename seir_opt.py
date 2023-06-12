@@ -726,7 +726,7 @@ def simulate(V):
 
     if simulate_only:
         # Write the csv (simulate)
-        o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star,alpha)
+        o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star)
 
     return t_sim, alpha, V_cal, V_star, D
 
@@ -955,19 +955,19 @@ def o_optimize_output(l,z,i):
                 fn.write("  " + str(V_table[a, t, i_opt, j_opt]) + "  ")
             fn.write("\n")
         
-def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star,alpha):
+def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star):
     """ Outputs to CSV for simulation only
     """
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(
-        ["area", "t", "S", "SV", "E", "EV", "I", "IV", "alpha", "D", "R", "W", "V", "t_n", "L"])
+        ["area", "t", "S", "SV", "E", "EV", "I", "IV", "H", "D", "R", "W", "V", "t_n", "L"])
     csv_writer.writerow(
         [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_sim, L])
     for a in A:
         for t in range(T + 1):
             if t != T:
                 csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
-                                    I_V[a, t], alpha[a, t], D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
+                                    I_V[a, t], 0, D[a, t], R[a, t], W[a, t], V_star[a, t], t_sim, L])
             else:
                 csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
                                         I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
