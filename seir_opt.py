@@ -12,11 +12,10 @@ import sys
 import time
 import copy
 
-def simulate_switchover_policy():
+def simulate_switchover_policy(V,B):
     """Runs simulation for switchover
     """
     global new_priority
-    global V, B
     if t_switch is None:
         # allocate vaccine to highest priority area
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
@@ -36,7 +35,7 @@ def simulate_switchover_policy():
             else: 
                 t_next =  T	                            # for last area, next switching time is T
                 for t in range(t_prev, t_next):
-                    V[A[z], t] = B[t]                      # for last area, no splitting
+                    V[A[q], t] = B[t]                      # for last area, no splitting
           
 def main():
     start_time = time.time()
@@ -82,9 +81,9 @@ def main():
         W0[a] = rho[a]*N[a] - SV0[a] - EV0[a] - IV0[a] - rho[a]*E0[a] - rho[a]*I0[a]
         
     # Initialize V for initial sim using priority list. Use splitting between areas.
-    global V
+
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    simulate_switchover_policy()
+    simulate_switchover_policy(V,B)
 
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
@@ -275,7 +274,7 @@ def main():
                     else: 
                         t_next =  T	                                    # for last area, next switching time is T
                         for t in range(t_prev, t_next):
-                            V[A[z], t] = B[t]                           # for last area, no splitting
+                            V[A[q], t] = B[t]                           # for last area, no splitting
             # Simulate   
             t_sim, alpha, V_cal, V, D = simulate(V)
             deaths_sim_only = (1 - nu)*D[donor, T] 
@@ -584,21 +583,43 @@ def simulate(V):
 
     # Compute alpha_0. Initialize t_sim, variant_emerge
     alpha_0 = {(a): a_0 * gamma[a] for a in A}
+    
+    """ used for randomize """
+    EA = {(t1): a_0 for t1 in range(2*T_D)} # expected infection rate 
+    
     t_sim = T
     variant_emerge = False
 
     for t in range(T):   # t = 0,...,T-1
         # compute alpha if variant found
         if variant_emerge:
-            a_t = a_0 + delta_a/(1 + math.exp(-k*(t - (t_sim + T_D))))
-            alpha[m, t] = a_t * gamma[m]
-            for a in A:
-                if a != m:
-                    if t - L < 0:
-                        alpha[a, t] = alpha_0[a]
-                    else:
-                        alpha[a, t] = a_0 + delta_a / \
-                            (1 + math.exp(-k*(t - L - (t_sim + T_D))))
+            
+            if random:
+                for t1 in range(2*T_D - 1):     # Shift EA left for next t
+                    EA[t1] = EA[t1+1]
+                EA[2*T_D - 1] = a_0 + delta_a * (1 - np.exp(-(I_cum - n)/n)) # EA for current day
+                EA_ave = 0
+                for t1 in range(2*T_D):     # Compute moving ave EA_ave
+                    EA_ave += EA[t1]           
+                EA_ave = EA_ave/(2*T_D)
+                alpha[m, t] = EA_ave * gamma[m] # alpha in variant area
+                for a in A:
+                    if a != m:              # alpha in other areas has lag L         
+                        if t - L < 0:
+                            alpha[a, t] = alpha_0[a]
+                        else:
+                            alpha[a, t] = alpha[m, t - L] * gamma[a]/gamma[m] 
+                            
+            else:
+                a_t = a_0 + delta_a/(1 + math.exp(-k*(t - (t_sim + T_D))))
+                alpha[m, t] = a_t * gamma[m]
+                for a in A:
+                    if a != m:
+                        if t - L < 0:
+                            alpha[a, t] = alpha_0[a]
+                        else:
+                            alpha[a, t] = a_0 + delta_a / \
+                                (1 + math.exp(-k*(t - L - (t_sim + T_D))))
         else:                           # constant alpha
             for a in A:
                 alpha[a, t] = alpha_0[a]
@@ -647,28 +668,52 @@ def simulate(V):
             I_V[a, t + 1] = I_V[a, t] + r_I * E_V[a, t] - r_d[a]*I_V[a, t]
             D[a, t + 1] = D[a, t] + r_d[a]*p_D*I[a, t] + r_d[a]*p_V_D*I_V[a, t]
             R[a, t + 1] = R[a, t] + r_d[a]*(1 - p_D)*I[a, t] + r_d[a]*(1 - p_V_D)*I_V[a, t]
-
-        # check for the variant occuring, do not calculate if variant already emerged
-        if not variant_emerge:
-            I_sum = I_max = 0 # Isum = sum over a and t, Imax = max over a of sum over t
+        if random:
+            ### Compute I_cum = sum over a and t (used to check if variant emerges and compute aplha),
+            # I_max = max over a of sum over t
+            I_cum = I_max = 0 # I_cum = sum over a and t, I_max = max over a of sum over t
             for a in A:
                 I_current = 0 # sum over t for current a
                 if a != donor: ## donor doesn't contribute to variant
                     for t1 in range(t+1): # t1=0,...,t 
-                        I_sum += I[a, t1]     # sum all infected up to current time
+                        I_cum += I[a, t1]     # sum all infected up to current time
                         I_current += I[a, t1] # sum current area up to current time
                     if I_max < I_current:     # update area that has max infections
                         area_max = a
                         I_max = I_current
-            # If cum infections > n, variant emerges. Compute t_sim and m = area where variant emerges
-            if I_sum > n:
-                variant_emerge = True
-                m = area_max # variant emerges in area with max cum I
-                I_tot = 0
+            # If variant hasn't emerged, check if variant could have emerged (random time). 
+            # If it emerges, compute t_sim = time variant emerges, m = area where variant emerges
+            if not variant_emerge:
+                if I_cum > n:
+                    variant_emerge = True
+                    m = area_max # variant emerges in area with max cum I
+                    I_tot = 0
+                    for a in A:
+                        if a != donor:
+                            I_tot += I[a, t]
+                    t_sim = t + 1 - (I_cum - n)/(I_tot) ###
+        else:
+            # check for the variant occuring, do not calculate if variant already emerged
+            if not variant_emerge:
+                I_sum = I_max = 0 # Isum = sum over a and t, Imax = max over a of sum over t
                 for a in A:
-                    if a != donor:
-                        I_tot += I[a, t]
-                t_sim = t + 1 - (I_sum - n)/(I_tot)
+                    I_current = 0 # sum over t for current a
+                    if a != donor: ## donor doesn't contribute to variant
+                        for t1 in range(t+1): # t1=0,...,t 
+                            I_sum += I[a, t1]     # sum all infected up to current time
+                            I_current += I[a, t1] # sum current area up to current time
+                        if I_max < I_current:     # update area that has max infections
+                            area_max = a
+                            I_max = I_current
+                # If cum infections > n, variant emerges. Compute t_sim and m = area where variant emerges
+                if I_sum > n:
+                    variant_emerge = True
+                    m = area_max # variant emerges in area with max cum I
+                    I_tot = 0
+                    for a in A:
+                        if a != donor:
+                            I_tot += I[a, t]
+                    t_sim = t + 1 - (I_sum - n)/(I_tot)
     # Compute V_cal at T (used in LP and opt output)
     for a in A:
         V_cal[a, T] = I[a, T] + p_e*I_V[a, T]
@@ -795,7 +840,8 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     # read params
     global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
         delta, beta, iter_lmt, iter_lmt_search, dT, verbosity, T0,\
-        improving, realloc_flag, t_priority, t_priority_vector  #realloc_flag not currently used
+        improving, realloc_flag, t_priority, t_priority_vector, \
+        random    #realloc_flag not currently used
     simulate_only = bool(convert_num(params.find("simulate_only").text))
     lambda_0 = convert_num(params.find("lambda_0").text)
     phi = convert_num(params.find("phi").text)
@@ -807,6 +853,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     iter_lmt_search = convert_num(params.find("iter_lmt_search").text)
     dT = convert_num(params.find("dT").text)
     verbosity = convert_num(params.find("verbosity").text)
+    random = bool(convert_num(params.find("random").text))
     
     global USED_OPTIMIZATION
     USED_OPTIMIZATION = not simulate_only | USED_OPTIMIZATION
