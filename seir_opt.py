@@ -536,9 +536,6 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T - T0 + 1)), "Vaccine_budget")
     v.addConstrs((V1.sum('*', t) == 0 for t in range(T - T0 + 1, T)), "No_vaccine")
 
-    print((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*W1[a, t] - V1[a, t]
-                  for a in A for t in range(1, T)))
-    return 0
     # Dynamics for start time t=1 to T-1
     v.addConstrs((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*W1[a, t] - V1[a, t]
                   for a in A for t in range(1, T)), "Vaccine_willingness")
