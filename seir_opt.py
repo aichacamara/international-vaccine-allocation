@@ -10,45 +10,19 @@ import shutil
 import csv
 import sys
 import time
-import copy
-
-def simulate_switchover_policy(V,B):
-    """Runs simulation for switchover
-    """
-    global new_priority
-    if t_switch is None:
-        # allocate vaccine to highest priority area
-        for t in range(T - T0 + 1): # t=0,...,T-T0+1
-            V[priority[0], t] = B[t]     # highest priority
-    else:
-        new_priority = priority # for consistency with simulate_only, where the priorities change
-        t_prev = 0	# initialize previous switching time
-        for q in range(n_a):      # area index 0, ..., n_a - 1
-            if q < n_a - 1: 
-                t_next =  t_switch[q]	            # set next switching time
-                for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
-                    V[new_priority[q], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
-                    for q1 in range(q + 1, n_a):
-                        if q1 > q:          # divide proportion split b/t lower-priority areas
-                            V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
-                t_prev = t_next                         # update for next area	 
-            else: 
-                t_next =  T	                            # for last area, next switching time is T
-                for t in range(t_prev, t_next):
-                    V[A[q], t] = B[t]                      # for last area, no splitting
-          
+             
 def main():
+    global start_time
     start_time = time.time()
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, l, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global new_priority
-
+    global main_count, donor_deaths_sim_min, split
     ############## TIMING VARIABLE ##############
     global gurobi_optimization_time
     gurobi_optimization_time = 0
     #############################################
     
-
     # read input file, compute constants
     import_xml(xml_path=os.getcwd() + "/" + input_file)
     # initialize output filename and directory
@@ -58,7 +32,40 @@ def main():
         pass 
     fn_base = f'./output/{input_filename.split("/")[-1][0:-4]}_nu{nu:3.1f}' #_nu{nu:3.1f} output file name uses inputs
     ##sys.stdout = open(fn_base + "_con.out", "w") # console output redirected to file
+    
+    # Split to helper function here
+    """
+    Useful if you want to declare multiple runs where the program can modify its own
+    global variables:
+    
+    i.e.
+    while(condition):
+        split = split + [value]
+        if worse:
+            do go back
+            perform_vaccine_alloc()
+        else:
+            keep going
+            perform_vaccine_alloc()
+    """
+    perform_vaccine_alloc()
 
+
+
+""" WORK FUNCTIONS """
+
+def perform_vaccine_alloc():
+    """
+    Primary Initialization and work body
+    """
+    global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, l, z, i, phase, fn_base
+    global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
+    global new_priority
+    
+    print(f"\nInput File: {input_file}\n")
+    print(f"Priority: {priority}")
+    print(f"Switch: {t_switch}")
+    print(f"Split: {split}\n")
     # Initialize state variables
     S0 = {a: 0 for a in A}
     SV0 = {a: 0 for a in A}
@@ -246,6 +253,9 @@ def main():
     if simulate_only:
         fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
         fn.write("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
+        print(f"Simulate. Policy gives vaccine to one area, then reallocates using priorities {input_file}")
+        print("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
+        
         global V_sim
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
         for a1 in A: 
@@ -293,11 +303,38 @@ def main():
             for a in A:
                 for t in range(T - T0 + 1):
                     V_tot_sim[a] += V[a, t]
-                    
+            if a1 == A[0]:
+                global donor_deaths_sim_min
+                donor_deaths_sim_min = donor_deaths_sim_only
             o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim)
         o_loop_report()
     else: o_optimize_output(l,z,i)    
-
+ 
+def simulate_switchover_policy(V,B):
+    """Runs simulation for switchover
+    """
+    global new_priority
+    if t_switch is None:
+        # allocate vaccine to highest priority area
+        for t in range(T - T0 + 1): # t=0,...,T-T0+1
+            V[priority[0], t] = B[t]     # highest priority
+    else:
+        new_priority = priority # for consistency with simulate_only, where the priorities change
+        t_prev = 0	# initialize previous switching time
+        for q in range(n_a):      # area index 0, ..., n_a - 1
+            if q < n_a - 1: 
+                t_next =  t_switch[q]	            # set next switching time
+                for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
+                    V[new_priority[q], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
+                    for q1 in range(q + 1, n_a):
+                        if q1 > q:          # divide proportion split b/t lower-priority areas
+                            V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
+                t_prev = t_next                         # update for next area	 
+            else: 
+                t_next =  T	                            # for last area, next switching time is T
+                for t in range(t_prev, t_next):
+                    V[A[q], t] = B[t]                      # for last area, no splitting
+                    
 def optimize_inner(l, V): 
     global deaths, donor_deaths, tot_deaths, t_n, zNLP, V_table, \
         j_min, j_max, alpha_min, V_cal_min, V_min, \
@@ -1126,9 +1163,12 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
     if simulate_only:
         try:
             fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
+            string = f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} '
             for a in A:
-                fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
+                fn.write(f'{V_tot_sim[a]: 5.0f} ') 
+                string += f'{V_tot_sim[a]: 5.0f} '               
             fn.write("\n")
+            print(string)
             return 1
         except:
             print("failed to produce policy report")
@@ -1179,10 +1219,11 @@ def o_loop_report():
     
 ########################################### Script Run ###########################################
 if __name__ == '__main__':
-    global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION
+    global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, loop_sim
     TIME_TRUNCATE = 5 # rounded time decimal places
     INCLUDE_PRINT = True # set to false if print is unwanted
-    USED_OPTIMIZATION = False #formatting variable
+    USED_OPTIMIZATION = False # formatting variable
+    loop_sim = False # infinite loop to continue looking for the best split ratio
     
     parser = argparse.ArgumentParser()
 
@@ -1205,6 +1246,6 @@ if __name__ == '__main__':
             main()
     
     if INCLUDE_PRINT: 
-        print("\n")
+        if not simulate_only: print("")
         if (USED_OPTIMIZATION):
             print(f"Time elapsed is rounded to {TIME_TRUNCATE} decimal places \n")
