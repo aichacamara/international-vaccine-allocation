@@ -1,4 +1,5 @@
 from io import TextIOWrapper
+from multiprocessing import Pool
 import os
 import math
 import numpy as np
@@ -350,7 +351,7 @@ def optimize_inner(l, V):
         j_min, j_max, alpha_min, V_cal_min, V_min, \
         alpha_prev, V_cal_prev, V_prev, \
         deaths_opt, i_opt, j_opt, \
-        j, LP_count, infeas_count, dVmax, dVmin
+        j, LP_count, infeas_count, dVmax, dVmin, alpha, V_cal
 
     if i == 0:
         LP_count = infeas_count = 0
@@ -507,6 +508,11 @@ def optimize_inner(l, V):
         V_prev = V_min
     return deaths[i, j_min[i]]
 
+def func_v_w(t):
+    global A
+    return (W1[a, t+1] == W1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*W1[a, t] - V1[a, t]
+                for a in A)
+
 def solve_LP(l, t_LP, alpha, V_cal, eps):
     # global S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v
 
@@ -536,12 +542,15 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T - T0 + 1)), "Vaccine_budget")
     v.addConstrs((V1.sum('*', t) == 0 for t in range(T - T0 + 1, T)), "No_vaccine")
 
-    print((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*W1[a, t] - V1[a, t]
-                  for a in A for t in range(1, T)))
-    return 0
+    # #### PARALLEL EXPERIMENT
+
+    
+    for res in pool.map(func_v_w,range(1,T)):
+        # v.addContstrs(res,"Vaccine_willingness")
+        print(res)
     # Dynamics for start time t=1 to T-1
-    v.addConstrs((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*W1[a, t] - V1[a, t]
-                  for a in A for t in range(1, T)), "Vaccine_willingness")
+    # v.addConstrs((W1[a, t+1] == W1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*W1[a, t] - V1[a, t]
+    #               for a in A for t in range(1, T)), "Vaccine_willingness")
     v.addConstrs((S1[a, t+1] == S1[a, t] - alpha[a, t]*V_cal[a, t]/N[a]*S1[a, t] - V1[a, t]
                   for a in A for t in range(1, T)), "S")
     v.addConstrs((SV1[a, t+1] == SV1[a, t] - p_r*alpha[a, t]*V_cal[a, t]/N[a]*SV1[a, t] + V1[a, t]
@@ -1260,10 +1269,11 @@ def o_loop_report():
 ########################################### Script Run ###########################################
 
 if __name__ == '__main__':
-    global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, loop_sim
+    global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, loop_sim, pool
     TIME_TRUNCATE = 5 # rounded time decimal places
     INCLUDE_PRINT = True # set to false if print is unwanted
     USED_OPTIMIZATION = False # formatting variable
+    pool = Pool()
     
     parser = argparse.ArgumentParser()
 
