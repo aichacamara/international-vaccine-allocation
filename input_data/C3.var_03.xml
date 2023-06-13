@@ -33,6 +33,22 @@
     <priority>nondonor1,donor,nondonor2</priority> <!--list (some) areas, high priority first-->
     <donor>donor</donor>   <!-- Donor area -->
     <m>nondonor</m>        <!-- Variant area -->
+    
+    <!-- Switchover policy (optional parameter):
+      Usage:
+        give a list of switchover time periods, if there are not enough "switch" times, 
+        times will be recycled until loops are completed (or Time horizon terminates)
+        A = [area1, area2, area3, area4]
+        t_switch = [30, 60]
+        area1 = 30
+        area2 = 60
+        area3 = 30
+        area4 = 60
+        ...
+    -->
+    <t_switch>60,180</t_switch>
+    <switch_split>0</switch_split>  
+
     <n>45000</n>           <!-- 45K Person infection-days until new variant -->
   </area_data>
 
@@ -54,21 +70,6 @@
     <T_D>25</T_D>          <!-- 45 Time for variant to dominate -->
     <p>0.01</p>            <!-- prop of infected that have new variant when introduced -->
     <b></b>                <!-- Vaccine avail as a prop, day = 0,...,T-1. Default = 1 -->
-
-    <!-- Switchover policy (optional parameter):
-    Usage:
-      give a list of switchover time periods, if there are not enough "switch" times, 
-      times will be recycled until loops are completed (or Time horizon terminates)
-      A = [area1, area2, area3, area4]
-      t_switch = [30, 60]
-      area1 = 30
-      area2 = 60
-      area3 = 30
-      area4 = 60
-      ...
-    -->
-    <t_switch>60,180</t_switch>
-    <switch_split>0</switch_split>  
     <!-- 
       to add b here, just seperate the numbers by commas
       ex. <b>1,1,1,1,1</b>

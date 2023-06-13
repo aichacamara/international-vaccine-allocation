@@ -785,6 +785,10 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
 
     # read area data
     global A, A_D, gamma, rho_I_N, rho, rho_V, delta_r, N, priority, t_switch, split, donor, m, n, n_a
+    # switchover policy
+    global t_switch, split
+    
+    
     A = [] # all areas
     A_D = [] # areas except donor
     gamma = {}
@@ -816,12 +820,22 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         N[area] = convert_num(child.find("N").text)
     n_a = len(A)
     
+    t_switch = area_data.find("t_switch")
+    split = area_data.find("switch_split")
+    
+    if t_switch is not None:
+        t_switch = t_switch.text.split(",")
+        for i in range(len(t_switch)):
+            t_switch[i] = convert_num(t_switch[i])
+    
+    if split is not None:
+        split = convert_num(split.text)
+    else:
+        split = 0
+    
     # read scenario data
     global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
         p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
-    
-    # switchover policy
-    global t_switch, split
     
     T = convert_num(scenario_data.find("T").text)
     B_0 = convert_num(scenario_data.find("B_0").text) 
@@ -840,18 +854,6 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     p = convert_num(scenario_data.find("p").text)
     b_arr = scenario_data.find("b").text
     v_u = convert_num(scenario_data.find("v_u").text) 
-    t_switch = scenario_data.find("t_switch")
-    split = scenario_data.find("switch_split")
-    
-    if t_switch is not None:
-        t_switch = t_switch.text.split(",")
-        for i in range(len(t_switch)):
-            t_switch[i] = convert_num(t_switch[i])
-    
-    if split is not None:
-        split = convert_num(split.text)
-    else:
-        split = 0
     
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
