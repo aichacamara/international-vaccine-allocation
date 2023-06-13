@@ -51,13 +51,13 @@ def main():
             keep going
             perform_vaccine_alloc()
     """
-    perform_vaccine_alloc()
+    outer_loop()
 
 ####################################### WORK FUNCTIONS #######################################
 
-def perform_vaccine_alloc():
+def outer_loop():
     """
-    Primary Initialization and work body
+    Primary Initialization and work body (Outer Loop)
     """
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, l, z, i, phase, fn_base
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
@@ -93,6 +93,16 @@ def perform_vaccine_alloc():
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
     simulate_switchover_policy(V,B)
 
+    # open output files
+    global fn, csv_file #output files
+    
+    fn = open(fn_base + ".out", "w")
+    csv_file = open(fn_base + "_plot.csv", "w") 
+    o_input_echo() 
+
+    """
+        OPTIMIZATION CODE BLOCK
+    """
     if not simulate_only:
         # Initialize LP Variables. LP will be updated (objective, constraints) in solve_LP
         v = gp.Model("vaccine_opt")
@@ -243,14 +253,9 @@ def perform_vaccine_alloc():
               Gurobi Optimize Time: {round(gurobi_optimization_time, TIME_TRUNCATE)}s \t Program Run Time: {round(elapsed_time-gurobi_optimization_time, TIME_TRUNCATE)}"""
               )
     
-    
-    # open output files
-    global fn, csv_file #output files
-    
-    fn = open(fn_base + ".out", "w")
-    csv_file = open(fn_base + "_plot.csv", "w") 
-    o_input_echo() 
-    
+    """
+        SIMULATION CODE BLOCK
+    """
     if simulate_only:
         fn.write("Simulate. Policy is based on top priority area and policy inputs.   " + input_file + "\n\n")  
         fn.write("#1 priority  wtd_deaths donor_deaths    tot_deaths    t_n    variant area  vacc by area\n") 
@@ -821,7 +826,7 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     n_a = len(A)
     
     t_switch = area_data.find("t_switch")
-    split = area_data.find("switch_split")
+    split = area_data.find("split")
     
     if t_switch is not None:
         t_switch = t_switch.text.split(",")
@@ -1108,8 +1113,15 @@ def o_input_echo():
             for area in A:
                 fn.write(str(rho[area]) + " ")
             fn.write("\n")
+            
+            fn.write("\t\t\t\t\t<<<<<<<<<<<<<<<<<< Global Area Data >>>>>>>>>>>>>>>>>>" + "\n")
+            fn.write("\t\t\t Highest => Lowest \n")
+            fn.write(f"\t\t\t Priority Areas: {priority} \n")
+            fn.write(f"\t\t\t t_switch Days: {t_switch}\n")
+            fn.write(f"\t\t\t split allocation: {split} \n")
+            fn.write(f"\t\t\t Donor Area: {donor}\n")
+            fn.write(f"\t\t\t n: {str(n)} (Number of people before new variant)\n\n")
 
-            fn.write("n: " + str(n) + "\n")
             fn.write("------------------------------Scenario data------------------------------" + "\n")
             fn.write("Time horizon (days): " + str(T) + "\n")
             fn.write("Vaccine avaiable day 0: " + str(B_0) + "\n")
@@ -1227,7 +1239,6 @@ if __name__ == '__main__':
     TIME_TRUNCATE = 5 # rounded time decimal places
     INCLUDE_PRINT = True # set to false if print is unwanted
     USED_OPTIMIZATION = False # formatting variable
-    loop_sim = False # infinite loop to continue looking for the best split ratio
     
     parser = argparse.ArgumentParser()
 

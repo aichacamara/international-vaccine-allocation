@@ -31,24 +31,21 @@
     </area>
 
     <priority>nondonor1,donor,nondonor2</priority> <!--list (some) areas, high priority first-->
-    <donor>donor</donor>   <!-- Donor area -->
-    <m>nondonor</m>        <!-- Variant area -->
     
     <!-- Switchover policy (optional parameter):
       Usage:
-        give a list of switchover time periods, if there are not enough "switch" times, 
-        times will be recycled until loops are completed (or Time horizon terminates)
-        A = [area1, area2, area3, area4]
-        t_switch = [30, 60]
-        area1 = 30
-        area2 = 60
-        area3 = 30
-        area4 = 60
+        t_switch[0] = day at which priority switches from the area priority[0] to the area priority[1] 
+        … 
+        t_switch[n_a – 2] = day at which priority switches from priority[n_a – 2] to priority[n_a – 1],  
+
+        where n_a = number of areas 
         ...
     -->
     <t_switch>60,180</t_switch>
-    <switch_split>0</switch_split>  
-
+    <split>0</split>       <!-- Default 0 (no split)-->
+    
+    <donor>donor</donor>   <!-- Donor area -->
+    <m>nondonor</m>        <!-- Variant area -->
     <n>45000</n>           <!-- 45K Person infection-days until new variant -->
   </area_data>
 
