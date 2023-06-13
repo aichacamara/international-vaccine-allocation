@@ -12,6 +12,9 @@ import sys
 import time
              
 def main():
+    """
+    Global variable initialization and initial XML read in
+    """
     global start_time
     start_time = time.time()
     global S0, SV0, E0, EV0, I0, IV0, W0, S1, SV1, E1, EV1, I1, IV1, D1, R1, W1, V1, v, l, z, i, phase, fn_base
@@ -50,9 +53,7 @@ def main():
     """
     perform_vaccine_alloc()
 
-
-
-""" WORK FUNCTIONS """
+####################################### WORK FUNCTIONS #######################################
 
 def perform_vaccine_alloc():
     """
@@ -251,8 +252,8 @@ def perform_vaccine_alloc():
     o_input_echo() 
     
     if simulate_only:
-        fn.write("Simulate. Policy gives vaccine to one area, then reallocates using priorities  " + input_file + "\n\n") 
-        fn.write("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
+        fn.write("Simulate. Policy is based on top priority area and policy inputs.   " + input_file + "\n\n")  
+        fn.write("#1 priority  wtd_deaths donor_deaths    tot_deaths    t_n    variant area  vacc by area\n") 
         print(f"Simulate. Policy gives vaccine to one area, then reallocates using priorities {input_file}")
         print("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
         
@@ -926,9 +927,9 @@ def o_optimize_output(l,z,i):
             V_tot_min[a] += V_table[a, t, i, j_min[i]]
     # first sim
     # Verbosity 0
-    fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n\n")
-        
-    fn.write( "                           --------deaths-------_\n")
+    fn.write("Convergence: Min/Max change in V_cal, (sim - LP)\n")
+    fn.write("Variant area for last sim: " + m +"\n\n") 
+    fn.write( "                           --------deaths--------\n")
     fn.write( "i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area\n")
     fn.write("first simulation\n")
     fn.write(f'0  0       0        0    {deaths[0,0]: 8.2f} {donor_deaths[0,0]: 8.2f} {tot_deaths[0,0]: 8.2f} {t_n[0,0]: 6.2f}                  ')
@@ -1162,7 +1163,7 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
     """
     if simulate_only:
         try:
-            fn.write(f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} ')
+            fn.write(f'{a1: ^{9}}    {deaths_sim_only: 8.2f}      {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}    {t_sim: 6.2f}   {m: ^{9}}\t\t') 
             string = f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} '
             for a in A:
                 fn.write(f'{V_tot_sim[a]: 5.0f} ') 
@@ -1206,7 +1207,7 @@ def o_loop_report():
         try:
             """
             @TODO:
-                Move output lines for simulation here. 
+                Move output lines for optimize here. 
                 
                 Currently unavailable due to iterator variables being non-global. 
                 However, globalization of said variables would drastically 
@@ -1218,6 +1219,7 @@ def o_loop_report():
             return 0
     
 ########################################### Script Run ###########################################
+
 if __name__ == '__main__':
     global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, loop_sim
     TIME_TRUNCATE = 5 # rounded time decimal places

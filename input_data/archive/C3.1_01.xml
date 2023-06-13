@@ -30,7 +30,7 @@
     <rho>.78</rho> 
     </area>
 
-    <priority>nondonor1,nondonor2</priority> <!--list (some) areas, high priority first-->
+    <priority>nondonor1</priority> <!--list (some) areas, high priority first-->
     <donor>donor</donor>   <!-- Donor area -->
     <m>nondonor2</m>       <!-- Variant area -->
     <n>120000</n>           <!-- 45K Person infection-days until new variant -->

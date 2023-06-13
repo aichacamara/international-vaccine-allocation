@@ -3,25 +3,34 @@
 <data>
   <area_data>
 
-      <area name="donor">
-      <N>100000</N>            <!-- Population -->
-      <rho_V>0</rho_V>         <!-- Vaccination Rate -->
-      <rho_I_N>360</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
-      <delta_r>0.035</delta_r> <!--0.035 Testing effect on rate out of I -->
-      <gamma>1</gamma>         <!-- Behavior infection multiplier -->
-      <rho>.78</rho>           <!-- .78 Proportion willing to be vaccinated -->
-      </area>
+    <area name="donor">
+    <N>120000</N>            <!-- Population -->
+    <rho_V>0</rho_V>         <!-- Vaccination Rate -->
+    <rho_I_N>360</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
+    <delta_r>0.035</delta_r> <!--0.035 Testing effect on rate out of I -->
+    <gamma>1</gamma>         <!-- Behavior infection multiplier -->
+    <rho>.78</rho>           <!-- .78 Proportion willing to be vaccinated -->
+    </area>
 
-      <area name="nondonor">
-      <N>100000</N> 
-      <rho_V>0</rho_V> 
-      <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
-      <delta_r>0</delta_r> 
-      <gamma>1</gamma> 
-      <rho>.78</rho> 
-      </area>
+    <area name="nondonor1">
+    <N>120000</N> 
+    <rho_V>0</rho_V> 
+    <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
+    <delta_r>0</delta_r> 
+    <gamma>1</gamma> 
+    <rho>.78</rho> 
+    </area>
 
-    <priority>nondonor,donor</priority> <!--list (some) areas, high priority first-->
+    <area name="nondonor2">
+    <N>120000</N> 
+    <rho_V>0</rho_V> 
+    <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
+    <delta_r>0</delta_r> 
+    <gamma>1</gamma> 
+    <rho>.78</rho> 
+    </area>
+
+    <priority>nondonor2,donor,nondonor1</priority> <!--list (some) areas, high priority first-->
     <donor>donor</donor>   <!-- Donor area -->
     <m>nondonor</m>        <!-- Variant area -->
     <n>45000</n>           <!-- 45K Person infection-days until new variant -->
@@ -30,7 +39,7 @@
   <scenario_data>
     <T>180</T>             <!-- Time horizon, days -->
     <B_0>1500</B_0>        <!-- 1500 Vaccine available day 1 -->
-    <nu>0.5</nu>             <!-- 0 include fraction nu of non-donor deaths in objective  -->
+    <nu>0</nu>             <!-- 0 include fraction nu of non-donor deaths in objective  -->
     <v_u>0.03</v_u>        <!-- .03 upper limit on proportion infectious, due to behavior. No behavior: 0 -->
     <p_k>1</p_k>           <!-- max prop of avail vacc used in donor area -->
     <r_I>0.2</r_I>         <!-- rate out of exposed (E) state into infectious (I) state -->
@@ -58,8 +67,8 @@
       area4 = 60
       ...
     -->
-    <t_switch>30,60</t_switch>
-    <switch_split>0.2</switch_split>  
+    <t_switch>180,180</t_switch>
+    <switch_split>0</switch_split>  
     <!-- 
       to add b here, just seperate the numbers by commas
       ex. <b>1,1,1,1,1</b>
@@ -68,7 +77,7 @@
 
   <params>
     <simulate_only>1</simulate_only>      <!-- If 1, only do simulate-->
-    <random>0</random>                    <!-- 1 to simulate with randomize-->
+    <random>1</random>                    <!-- 1 to simulate with randomize-->
     <lambda_0>.001</lambda_0>             <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
     <epsilon_0>1000</epsilon_0>           <!-- exploration tolerance for LP V_cal -->
