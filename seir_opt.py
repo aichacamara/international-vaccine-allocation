@@ -21,6 +21,10 @@ def main():
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global new_priority
     global main_count, donor_deaths_sim_min, split
+    
+    """ Default min found as infinity """
+    donor_deaths_sim_min = float('inf')
+    
     ############## TIMING VARIABLE ##############
     global gurobi_optimization_time
     gurobi_optimization_time = 0
@@ -51,9 +55,36 @@ def main():
             keep going
             perform_vaccine_alloc()
     """
-    print(split)
-    # print(donor_deaths)
-    outer_loop()
+    if LOOP_SIM:
+        """
+        NOTE OUTPUT FILE WILL BREAK
+        """
+        priority_queue = []
+        
+        # hard coded start points
+        split = 0
+        t_switch = [0,0]
+        
+        while (split < 1.0):
+            
+            for i in range(0,180 +1):
+                for j in range(i,180 +1):
+                    t_switch = [i, j]
+                    temp_min = donor_deaths_sim_min
+                    os.system('clear')
+                    print(f"Min: {donor_deaths_sim_min}")
+                    print(f"Split: {split}")
+                    print(f"Switch: {t_switch}")
+                    outer_loop()
+                    
+                    if donor_deaths_sim_min < temp_min:
+                        priority_queue.append(["Split : T_Switch: Donor Deaths", split, t_switch, donor_deaths_sim_min])
+
+                
+            split += 0.01
+        print(priority_queue[-1])
+    else:
+        outer_loop()
 
 ####################################### WORK FUNCTIONS #######################################
 
@@ -65,10 +96,12 @@ def outer_loop():
     global deaths, donor_deaths, tot_deaths, t_sim # from opt_inner
     global new_priority
     
-    print(f"\nInput File: {input_file}\n")
-    print(f"Priority: {priority}")
-    print(f"Switch: {t_switch}")
-    print(f"Split: {split}\n")
+    if (INCLUDE_PRINT):
+        print(f"\nInput File: {input_file}\n")
+        print(f"Priority: {priority}")
+        print(f"Switch: {t_switch}")
+        print(f"Split: {split}\n")
+        
     # Initialize state variables
     S0 = {a: 0 for a in A}
     SV0 = {a: 0 for a in A}
@@ -262,12 +295,14 @@ def outer_loop():
     if simulate_only:
         fn.write("Simulate. Policy is based on top priority area and policy inputs.   " + input_file + "\n\n")  
         fn.write("#1 priority  wtd_deaths donor_deaths    tot_deaths    t_n    variant area  vacc by area\n") 
-        print(f"Simulate. Policy gives vaccine to one area, then reallocates using priorities {input_file}")
-        print("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
         
+        if INCLUDE_PRINT:
+            print(f"Simulate. Policy gives vaccine to one area, then reallocates using priorities {input_file}")
+            print("policy     wtd_deaths donor_deaths tot_deaths t_n   vacc by area\n")
+            
         global V_sim
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
-        for a1 in A: 
+        for a1 in A:         
             if t_switch is None:
                 # Initialize V giving priority to area a1
                 V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
@@ -314,8 +349,9 @@ def outer_loop():
                 for t in range(T - T0 + 1):
                     V_tot_sim[a] += V[a, t]
             if a1 == A[0]:
+                """ Maintain lowest donor deaths found """
                 global donor_deaths_sim_min
-                donor_deaths_sim_min = donor_deaths_sim_only
+                donor_deaths_sim_min = min(donor_deaths_sim_min,donor_deaths_sim_only)
             o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim)
         o_loop_report()
     else: 
@@ -946,6 +982,7 @@ def o_optimize_output(l,z,i):
     fn.write("Variant area for last sim: " + m +"\n\n") 
     fn.write( "                           --------deaths--------\n")
     fn.write( "i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area\n")
+    fn.write("first iteration \n")
     fn.write(f'0  0       0        0    {deaths[0,0]: 8.2f} {donor_deaths[0,0]: 8.2f} {tot_deaths[0,0]: 8.2f} {t_n[0,0]: 6.2f}                  ')
     for a in A:
         fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
@@ -1026,34 +1063,33 @@ def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star,alpha):
 
 def o_optimize_csvwriter():
     #output to .csv
-    try:
-        csv_writer = csv.writer(csv_file)
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(
+        ["area", "t", "S", "SV", "E", "EV", "I",
+            "IV", "alpha", "D", "R", "W", "V", "t_n", "L"]
+    )
+    csv_writer.writerow(
+        [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n[i_opt,j_opt], L]
+    )
+    for a in A:
         csv_writer.writerow(
-            ["area", "t", "S", "SV", "E", "EV", "I",
-                "IV", "alpha", "D", "R", "W", "V", "t_n", "L"]
+            [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
+            IV0[a], float(alpha[a, 0]), 0, 0, S0[a], V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] # was V_min[a, 0], t_min 
         )
+        for t in range(1, T):
+            csv_writer.writerow(
+                [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
+                    IV1[a, t].x, float(alpha[a, t]), D1[a, t].x, R1[a, t].x, W1[a, t].x, 
+                    V_table[a, t, i_opt, j_opt], t_n[i_opt,j_opt], L] 
+            )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
+        """ write final row """
         csv_writer.writerow(
-            [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n[i_opt,j_opt], L]
+            [a, T, S1[a, T].x, SV1[a, T].x, E1[a, T].x, EV1[a, T].x, I1[a, T].x,
+                IV1[a, T].x, 0, D1[a, T].x, R1[a, T].x, W1[a, T].x, 
+                V_table[a, T, i_opt, j_opt], t_n[i_opt,j_opt], L] 
         )
-        for a in A:
-            csv_writer.writerow(
-                [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
-                IV0[a], float(alpha[a, 0]), 0, 0, S0[a], V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] # was V_min[a, 0], t_min 
-            )
-            for t in range(1, T):
-                csv_writer.writerow(
-                    [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
-                        IV1[a, t].x, float(alpha[a, t]), D1[a, t].x, R1[a, t].x, W1[a, t].x, 
-                        V_table[a, t, i_opt, j_opt], t_n[i_opt,j_opt], L] 
-                )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
-            """ write final row """
-            csv_writer.writerow(
-                [a, T, S1[a, T].x, SV1[a, T].x, E1[a, T].x, EV1[a, T].x, I1[a, T].x,
-                    IV1[a, T].x, 0, D1[a, T].x, R1[a, T].x, W1[a, T].x, 
-                    V_table[a, T, i_opt, j_opt], t_n[i_opt,j_opt], L] 
-            )
-    except:
-        print("Failed to write CSV for Optimize")
+
+
 
 def o_state_equations(fn: TextIOWrapper,
                            num_length: int,
@@ -1193,12 +1229,14 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
     if simulate_only:
         try:
             fn.write(f'{a1: ^{9}}    {deaths_sim_only: 8.2f}      {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}    {t_sim: 6.2f}   {m: ^{9}}\t\t') 
-            string = f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} '
+            output = f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} '
             for a in A:
                 fn.write(f'{V_tot_sim[a]: 5.0f} ') 
-                string += f'{V_tot_sim[a]: 5.0f} '               
+                output += f'{V_tot_sim[a]: 5.0f} '               
             fn.write("\n")
-            print(string)
+            
+            if INCLUDE_PRINT:
+                print(output)
             return 1
         except:
             print("failed to produce policy report")
@@ -1250,11 +1288,11 @@ def o_loop_report():
 ########################################### Script Run ###########################################
 
 if __name__ == '__main__':
-    global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, loop_sim
+    global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, LOOP_SIM
     TIME_TRUNCATE = 5 # rounded time decimal places
-    INCLUDE_PRINT = True # set to false if print is unwanted
+    INCLUDE_PRINT = False # set to false if print is unwanted
     USED_OPTIMIZATION = False # formatting variable
-    
+    LOOP_SIM = False
     parser = argparse.ArgumentParser()
 
     # First positional argument (this must be present)
