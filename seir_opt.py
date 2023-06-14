@@ -51,6 +51,8 @@ def main():
             keep going
             perform_vaccine_alloc()
     """
+    print(split)
+    # print(donor_deaths)
     outer_loop()
 
 ####################################### WORK FUNCTIONS #######################################
@@ -319,7 +321,7 @@ def outer_loop():
     else: 
         o_optimize_csvwriter()
         o_optimize_output(l,z,i)    
- 
+    print(donor_deaths)
 def simulate_switchover_policy(V,B):
     """Runs simulation for switchover
     """
@@ -944,7 +946,6 @@ def o_optimize_output(l,z,i):
     fn.write("Variant area for last sim: " + m +"\n\n") 
     fn.write( "                           --------deaths--------\n")
     fn.write( "i  j     lambda    zNLP    weighted donor   total    t_n    conv of V_cal     vacc by area\n")
-    fn.write("first simulation\n")
     fn.write(f'0  0       0        0    {deaths[0,0]: 8.2f} {donor_deaths[0,0]: 8.2f} {tot_deaths[0,0]: 8.2f} {t_n[0,0]: 6.2f}                  ')
     for a in A:
         fn.write(f'{V_tot_sim[a]: 5.0f} ')                    
