@@ -45,7 +45,7 @@
     <split>0</split>       <!-- Default 0 (no split)-->
     
     <donor>donor</donor>   <!-- Donor area -->
-    <m>nondonor</m>        <!-- Variant area -->
+    <m>nondonor1</m>        <!-- Variant area -->
     <n>45000</n>           <!-- 45K Person infection-days until new variant -->
   </area_data>
 
@@ -74,7 +74,7 @@
   </scenario_data>
 
   <params>
-    <simulate_only>0</simulate_only>      <!-- If 1, only do simulate-->
+    <simulate_only>1</simulate_only>      <!-- If 1, only do simulate-->
     <random>1</random>                    <!-- 1 to simulate with randomize-->
     <lambda_0>.001</lambda_0>             <!-- initial Lagrange multiplier for infection -->
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->

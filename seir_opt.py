@@ -321,7 +321,7 @@ def outer_loop():
     else: 
         o_optimize_csvwriter()
         o_optimize_output(l,z,i)    
-    print(donor_deaths)
+
 def simulate_switchover_policy(V,B):
     """Runs simulation for switchover
     """
