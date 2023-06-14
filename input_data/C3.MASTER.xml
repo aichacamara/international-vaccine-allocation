@@ -4,7 +4,7 @@
   <area_data>
 
     <area name="donor">
-    <N>120000</N>            <!-- Population -->
+    <N>100000</N>            <!-- Population -->
     <rho_V>0</rho_V>         <!-- Vaccination Rate -->
     <rho_I_N>360</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
     <delta_r>0.035</delta_r> <!--0.035 Testing effect on rate out of I -->
@@ -13,7 +13,7 @@
     </area>
 
     <area name="nondonor1">
-    <N>120000</N> 
+    <N>100000</N> 
     <rho_V>0</rho_V> 
     <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
     <delta_r>0</delta_r> 
@@ -22,7 +22,7 @@
     </area>
 
     <area name="nondonor2">
-    <N>120000</N> 
+    <N>100000</N> 
     <rho_V>0</rho_V> 
     <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
     <delta_r>0</delta_r> 
@@ -46,7 +46,7 @@
     
     <donor>donor</donor>   <!-- Donor area -->
     <m>nondonor1</m>        <!-- Variant area -->
-    <n>45000</n>           <!-- 45K Person infection-days until new variant -->
+    <n>120000</n>           <!-- 45K Person infection-days until new variant -->
   </area_data>
 
   <scenario_data>
