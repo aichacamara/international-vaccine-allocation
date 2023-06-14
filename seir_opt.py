@@ -146,10 +146,7 @@ def outer_loop():
         
         i = 0    # outer iteration
         phase = 1
-        print("Iteration 0:")
-        time_ = time.time()
         z[i] = optimize_inner(l[i], V)
-        print(f"Total Optimize Inner Time: {time.time() - time_} \n")
         
         if iter_lmt_search > 1:
             # Iterations 1 and 2
@@ -296,6 +293,7 @@ def outer_loop():
                         for t in range(t_prev, t_next):
                             V[A[q], t] = B[t]                           # for last area, no splitting
             # Simulate   
+            csv_file = open(f"{fn_base}_plot_{a1}.csv", "w") 
             t_sim, alpha, V_cal, V, D = simulate(V)
             deaths_sim_only = (1 - nu)*D[donor, T] 
             for a in A:
@@ -355,7 +353,6 @@ def optimize_inner(l, V):
     if i == 0:
         LP_count = infeas_count = 0
         # Define arrays
-        time_ = time.time()
         j_min = {i1: 0 for i1 in range(iter_lmt_search + 4)} 
             # iter j of inner loop that achieves best zNLP for each i 
         deaths = {(i1, j1): 0 for i1 in range(iter_lmt_search + 4) for j1 in range(iter_lmt + 1)} 
@@ -372,12 +369,9 @@ def optimize_inner(l, V):
         dVmax = {(i1, j1): 0 for i1 in range(iter_lmt_search + 4) for j1 in range(iter_lmt + 1)} 
         dVmin = {(i1, j1): 0 for i1 in range(iter_lmt_search + 4) for j1 in range(iter_lmt + 1)} 
             # Change in V_cal, sim - LP. Measures convergence.
-        print(f"Define Array Time: {time.time()-time_}")
         
         # First simulate. Record as i = 0, j = 0
-        time_ = time.time()
         t_n[0, 0], alpha, V_cal, V, D = simulate(V)
-        print(f"Single Simulate time: {time.time() - time_}")
         # Store sim V in V_table
         for t in range(T - T0 + 1): # t=0,...,T-T0+1
             for a in A:
@@ -437,20 +431,16 @@ def optimize_inner(l, V):
     zLP = 1e14              # initialize value of LP. Used for stopping.
     zLP_prev = 2*zLP        # initialize previous value of zLP. They must differ. Used for stopping.
 
-    time__ = time.time()
     while (abs(zLP - zLP_prev) >= delta_I or j < 2) and j < iter_lmt:
         j += 1
         LP_count += 1
         zLP_prev = zLP
         # solve LP
-        time_ = time.time()
         if improving == 1:
             zLP = solve_LP(l, t_LP, alpha_min, V_cal_min, eps)  # Improving: alpha_min, V_cal_min are best for this i
         else:
             zLP = solve_LP(l, t_LP, alpha, V_cal, eps)   # Not improving: alpha, V_cal from sim of current LP
-        print(f"Solve LP Time: {time.time()-time_}")
         
-        time_ = time.time()
         if v.status == GRB.OPTIMAL: # If LP infeas, update eps and iterate. All remaining j likely infeas. 
             V = {(a, t): V1[a, t].x for a in A for t in range(T)} # update V using optimal V1 from LP
             t_n[i, j], alpha, V_cal, V, D = simulate(V)   # simulate LP solution 
@@ -499,8 +489,6 @@ def optimize_inner(l, V):
         else:
             infeas_count += 1
         eps *= beta              # reduce current eps
-        print(f"LP Infeasibility Time: {time.time() - time_}")
-    print(f"Inner Loop Time: {time.time() - time__}")
     if i == 0: # Save iter 0 min solution in "prev" for use initializing all phase 1 iter 
         alpha_prev = alpha_min
         V_cal_prev = V_cal_min
@@ -525,12 +513,9 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     v.setObjective((1 - nu)*D1[donor, T] + nu*D1.sum('*', T)+ l*sum(I1[a, t] for a in A_D for t in range(1, t_LP + 1))
         - (1e-9)*sum(V1[a, t]*(T - t) for a in A for t in range(T)), GRB.MINIMIZE)  
     # Some constraints change with alpha, V_cal (inner loop). Rewrite them all.
-    time_ = time.time()
     if LP_count - infeas_count > 1:
         v.remove([constraint for constraint in v.getConstrs()]) # Remove all constraints
-    print(f"Remove constraints time: {time.time() - time_}")
     
-    time_ = time.time()
     v.addConstrs((V1[donor, t] <= p_k*B[t]
                  for t in range(T - T0 + 1)), "Policy_donor_limit")
     v.addConstrs((V1.sum('*', t) <= B[t] for t in range(T - T0 + 1)), "Vaccine_budget")
@@ -582,9 +567,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
                  for a in A for t in range(1, T)), "V_cal_upper_bd")
     v.addConstrs((G[a, t]*I1[a, t] + G[a, t]*p_e*IV1[a, t] >=  max(V_cal[a, t] - eps, 0) ##V_cal[a, t] - eps #*(t/T) ##*(t/T)^2 #Behavior 
                  for a in A for t in range(1, T)), "V_cal_lower_bd")
-    
-    print(f"Add constraints time: {time.time() - time_}")
-    
+        
     if LP_count -infeas_count > 1: # Warm start using VBasis/CBasis if v.status == GRB.OPTIMAL: #
         v.update() # Must update to refer to new constraints
         """WARM START CODE BLOCK
@@ -603,7 +586,6 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
     global gurobi_optimization_time
     t0 = time.time()        
     v.optimize()
-    print(f"Optimize Time: {time.time()-t0}")
     gurobi_optimization_time += time.time() - t0
     
     if v.status == GRB.OPTIMAL:
