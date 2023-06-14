@@ -316,7 +316,9 @@ def outer_loop():
                 donor_deaths_sim_min = donor_deaths_sim_only
             o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim)
         o_loop_report()
-    else: o_optimize_output(l,z,i)    
+    else: 
+        o_optimize_csvwriter()
+        o_optimize_output(l,z,i)    
  
 def simulate_switchover_policy(V,B):
     """Runs simulation for switchover
@@ -599,7 +601,7 @@ def solve_LP(l, t_LP, alpha, V_cal, eps):
         return 100000000
 
 def simulate(V):
-    global I, I_V, G, m
+    global I, I_V, G, m, alpha
     # Define state variables, alpha, delta_E, V_star, V_minus
     S = {(a, t): 0 for a in A for t in range(T+1)}     # t=0,...,T b/c computed in diff eq
     S_V = {(a, t): 0 for a in A for t in range(T+1)}
@@ -1021,6 +1023,37 @@ def o_simulate_csvwriter(t_sim,S,S_V,E,E_V,D,R,W,V_star,alpha):
                 csv_writer.writerow([a, t, S[a, t], S_V[a, t], E[a, t], E_V[a, t], I[a, t],
                                         I_V[a, t], 0, D[a, t], R[a, t], W[a, t], 0, t_sim, L])
 
+def o_optimize_csvwriter():
+    #output to .csv
+    try:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(
+            ["area", "t", "S", "SV", "E", "EV", "I",
+                "IV", "alpha", "D", "R", "W", "V", "t_n", "L"]
+        )
+        csv_writer.writerow(
+            [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n[i_opt,j_opt], L]
+        )
+        for a in A:
+            csv_writer.writerow(
+                [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
+                IV0[a], float(alpha[a, 0]), 0, 0, S0[a], V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] # was V_min[a, 0], t_min 
+            )
+            for t in range(1, T):
+                csv_writer.writerow(
+                    [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
+                        IV1[a, t].x, float(alpha[a, t]), D1[a, t].x, R1[a, t].x, W1[a, t].x, 
+                        V_table[a, t, i_opt, j_opt], t_n[i_opt,j_opt], L] 
+                )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
+            """ write final row """
+            csv_writer.writerow(
+                [a, T, S1[a, T].x, SV1[a, T].x, E1[a, T].x, EV1[a, T].x, I1[a, T].x,
+                    IV1[a, T].x, 0, D1[a, T].x, R1[a, T].x, W1[a, T].x, 
+                    V_table[a, T, i_opt, j_opt], t_n[i_opt,j_opt], L] 
+            )
+    except:
+        print("Failed to write CSV for Optimize")
+
 def o_state_equations(fn: TextIOWrapper,
                            num_length: int,
                            lower_limit: int,
@@ -1062,29 +1095,6 @@ def o_input_echo():
     (int) -> 1 on Success, 0 on Fail
     """
     try:
-        if not simulate_only:
-            #output to .csv
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(
-                ["area", "t", "S", "SV", "E", "EV", "I",
-                    "IV", "H", "D", "R", "W", "V", "t_n", "L"]
-            )
-            csv_writer.writerow(
-                [m, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, t_n[i_opt,j_opt], L]
-            )
-            for a in A:
-                csv_writer.writerow(
-                    [a, 0, S0[a], SV0[a], E0[a], EV0[a], I0[a],
-                    IV0[a], 0, 0, 0, S0[a], V_table[a, 0, i_opt, j_opt], t_n[i_opt,j_opt], L] # was V_min[a, 0], t_min 
-                )
-                for t in range(1, T + 1):
-                    csv_writer.writerow(
-                        [a, t, S1[a, t].x, SV1[a, t].x, E1[a, t].x, EV1[a, t].x, I1[a, t].x,
-                            IV1[a, t].x, 0, D1[a, t].x, R1[a, t].x, W1[a, t].x, 
-                            V_table[a, t, i_opt, j_opt], t_n[i_opt,j_opt], L] 
-                        )       # was V_min[a, t], t_min, which may be from a diff LP than S1,...
-        
-    
         #output to .out
         if verbosity >= 1:
             # input echo
