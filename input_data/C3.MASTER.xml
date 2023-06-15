@@ -17,7 +17,7 @@
     <rho_V>0</rho_V> 
     <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
     <delta_r>0</delta_r> 
-    <gamma>2</gamma> 
+    <gamma>1</gamma> 
     <rho>.78</rho> 
     </area>
 
@@ -26,7 +26,7 @@
     <rho_V>0</rho_V> 
     <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
     <delta_r>0</delta_r> 
-    <gamma>2</gamma> 
+    <gamma>1</gamma> 
     <rho>.78</rho> 
     </area>
 
