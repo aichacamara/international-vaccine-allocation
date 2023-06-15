@@ -56,35 +56,59 @@ def main():
             perform_vaccine_alloc()
     """
     if LOOP_SIM:
+        policy_variation_runs()
+        # scenario_variation_runs()
+        # area_variation_runs()
         """
-        NOTE OUTPUT FILE WILL BREAK
+        Other runs ...
         """
-        priority_queue = []
-        
-        # hard coded start points
-        split = 0
-        t_switch = [0,0]
-        
-        while (split < 1.0):
-            
-            for i in range(0,180 +1):
-                for j in range(i,180 +1):
-                    t_switch = [i, j]
-                    temp_min = donor_deaths_sim_min
-                    os.system('clear')
-                    print(f"Min: {donor_deaths_sim_min}")
-                    print(f"Split: {split}")
-                    print(f"Switch: {t_switch}")
-                    outer_loop()
-                    
-                    if donor_deaths_sim_min < temp_min:
-                        priority_queue.append(["Split : T_Switch: Donor Deaths", split, t_switch, donor_deaths_sim_min])
-
-                
-            split += 0.01
-        print(priority_queue[-1])
     else:
         outer_loop()
+
+################################## Multiple Simulation Runs ##################################
+
+def policy_variation_runs():
+    global main_count, donor_deaths_sim_min, split
+    
+    """ Default min found as infinity """
+    donor_deaths_sim_min = float('inf')
+    
+    priority_queue = []    
+    # hard coded start points
+    split = 0
+    t_switch = [0,0]
+    
+    while (split < 1.0):
+        
+        for t_switch_0 in range(0,180 +1,15):
+            for t_switch_1 in range(t_switch_0,180 +1,15):
+                t_switch = [t_switch_0, t_switch_1]
+                temp_min = donor_deaths_sim_min
+                os.system('clear')
+                print(f"Min: {donor_deaths_sim_min}")
+                print(f"Split: {split}")
+                print(f"Switch: {t_switch}")
+                outer_loop()
+                
+                if donor_deaths_sim_min < temp_min:
+                    priority_queue.append(["Split : T_Switch: Donor Deaths", split, t_switch, donor_deaths_sim_min])
+
+            
+        split += 0.05
+    print(f"Best: {priority_queue[-1]}")
+    print("Top 5:")
+    print(f"\t {priority_queue[:-6:-1]}")
+    
+    # Run best for output
+    split = priority_queue[0][1]
+    t_switch = priority_queue[0][2]
+    outer_loop()
+    
+def scenario_variation_runs():
+    raise("Error 501: Not Implemented Exception")
+    
+def area_variation_runs():
+    raise("Error 501: Not Implemented Exception")
 
 ####################################### WORK FUNCTIONS #######################################
 
@@ -348,10 +372,10 @@ def outer_loop():
             for a in A:
                 for t in range(T - T0 + 1):
                     V_tot_sim[a] += V[a, t]
-            if a1 == A[0]:
-                """ Maintain lowest donor deaths found """
-                global donor_deaths_sim_min
-                donor_deaths_sim_min = min(donor_deaths_sim_min,donor_deaths_sim_only)
+
+            """ Maintain lowest donor deaths found """
+            global donor_deaths_sim_min
+            donor_deaths_sim_min = min(donor_deaths_sim_min,donor_deaths_sim_only)
             o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_only, V_tot_sim)
         o_loop_report()
     else: 
@@ -1089,8 +1113,6 @@ def o_optimize_csvwriter():
                 V_table[a, T, i_opt, j_opt], t_n[i_opt,j_opt], L] 
         )
 
-
-
 def o_state_equations(fn: TextIOWrapper,
                            num_length: int,
                            lower_limit: int,
@@ -1290,9 +1312,9 @@ def o_loop_report():
 if __name__ == '__main__':
     global TIME_TRUNCATE, INCLUDE_PRINT, USED_OPTIMIZATION, LOOP_SIM
     TIME_TRUNCATE = 5 # rounded time decimal places
-    INCLUDE_PRINT = False # set to false if print is unwanted
+    INCLUDE_PRINT = True # set to false if print is unwanted
     USED_OPTIMIZATION = False # formatting variable
-    LOOP_SIM = False
+    LOOP_SIM = True
     parser = argparse.ArgumentParser()
 
     # First positional argument (this must be present)
@@ -1304,6 +1326,8 @@ if __name__ == '__main__':
     input_dir = args.input
     
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir,f))]
+    
+    if LOOP_SIM: INCLUDE_PRINT = False
     
     for f in files:
         global input_file
