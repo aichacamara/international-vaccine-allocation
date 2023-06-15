@@ -79,9 +79,9 @@ def policy_variation_runs():
     t_switch = [0,0]
     
     while (split < 1.0):
-        
-        for t_switch_0 in range(0,180 +1,15):
-            for t_switch_1 in range(t_switch_0,180 +1,15):
+        t_switch_increment = 15 # increment of t_switch
+        for t_switch_0 in range(0,180 +1,t_switch_increment): 
+            for t_switch_1 in range(t_switch_0,180 +1,t_switch_increment):
                 t_switch = [t_switch_0, t_switch_1]
                 temp_min = donor_deaths_sim_min
                 os.system('clear')
@@ -94,7 +94,7 @@ def policy_variation_runs():
                     priority_queue.append(["Split : T_Switch: Donor Deaths", split, t_switch, donor_deaths_sim_min])
 
             
-        split += 0.05
+        split += 0.05 # increment of split
     print(f"Best: {priority_queue[-1]}")
     print("Top 5:")
     print(f"\t {priority_queue[:-6:-1]}")
