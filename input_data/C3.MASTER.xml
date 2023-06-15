@@ -30,7 +30,7 @@
     <rho>.78</rho> 
     </area>
 
-    <priority>nondonor1,donor,nondonor2</priority> <!--list (some) areas, high priority first-->
+    <priority>donor,nondonor1,nondonor2</priority> <!--list (some) areas, high priority first-->
     
     <!-- Switchover policy (optional parameter):
       Usage:
@@ -41,8 +41,8 @@
         where n_a = number of areas 
         ...
     -->
-    <t_switch>180</t_switch>
-    <split>0</split>       <!-- Default 0 (no split)-->
+    <t_switch>180,180</t_switch> 
+    <split>0,0</split>       <!-- Default [0...] (no split)-->
     
     <donor>donor</donor>   <!-- Donor area -->
     <m>nondonor1</m>        <!-- Variant area -->
