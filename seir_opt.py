@@ -150,7 +150,7 @@ def outer_loop():
     # Initialize V for initial sim using priority list. Use splitting between areas.
 
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    simulate_switchover_policy(V,B)
+    V = initialize_V(V,B)
 
     """
         OPTIMIZATION CODE BLOCK
@@ -327,32 +327,26 @@ def outer_loop():
         global V_sim
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
         for a1 in A:         
-            if t_switch is None:
-                # Initialize V giving priority to area a1
-                V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-                for t in range(T - T0 + 1): # t=0,...,T-T0+1
-                    V[a1, t] = B[t]
-            else:
-                # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
+            # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
+            new_priority = priority
+            new_priority.remove(a1)
+            new_priority.insert(0,a1)
 
-                priority.remove(a1)
-                priority.insert(0,a1)
-
-                V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
-                t_prev = 0	# initialize previous switching time
-                for q in range(n_a):      # area index 0, ..., a_n - 1
-                    if q < n_a - 1: 
-                        t_next =  t_switch[q]	                        # set next switching time
-                        for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
-                            V[new_priority[q], t] = B[t] * (1 - split)	# allocate to area specified in switching policy
-                            for q1 in range(q + 1, n_a):
-                                if q1 > q:          # divide proportion split b/t lower-priority areas
-                                    V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
-                        t_prev = t_next                                 # update for next area	 
-                    else: 
-                        t_next =  T	                                    # for last area, next switching time is T
-                        for t in range(t_prev, t_next):
-                            V[A[q], t] = B[t]                           # for last area, no splitting
+            V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
+            t_prev = 0	# initialize previous switching time
+            for q in range(n_a):      # area index 0, ..., a_n - 1
+                if q < n_a - 1: 
+                    t_next =  t_switch[q]	                        # set next switching time
+                    for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
+                        V[new_priority[q], t] = B[t] * (1 - split[q])	# allocate to area specified in switching policy
+                        for q1 in range(q + 1, n_a):
+                            if q1 > q:          # divide proportion split b/t lower-priority areas
+                                V[new_priority[q1], t] = B[t] * split[q] / (n_a - 1 - q)
+                    t_prev = t_next                                 # update for next area	 
+                else: 
+                    t_next =  T	                                    # for last area, next switching time is T
+                    for t in range(t_prev, t_next):
+                        V[A[q], t] = B[t]                           # for last area, no splitting
             # Simulate   
             csv_file = open(f"{fn_base}_plot_{a1}.csv", "w") 
             t_sim, alpha, V_cal, V, D = simulate(V)
@@ -382,30 +376,27 @@ def outer_loop():
         o_optimize_csvwriter()
         o_optimize_output(l,z,i)    
 
-def simulate_switchover_policy(V,B):
+def initialize_V(V,B):
     """Runs simulation for switchover
     """
     global new_priority
-    if t_switch is None:
-        # allocate vaccine to highest priority area
-        for t in range(T - T0 + 1): # t=0,...,T-T0+1
-            V[priority[0], t] = B[t]     # highest priority
-    else:
-        new_priority = priority # for consistency with simulate_only, where the priorities change
-        t_prev = 0	# initialize previous switching time
-        for q in range(n_a):      # area index 0, ..., n_a - 1
-            if q < n_a - 1: 
-                t_next =  t_switch[q]	            # set next switching time
-                for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
-                    V[new_priority[q], t] = B[t] * (1 - split)	    # allocate to area specified in switching policy
-                    for q1 in range(q + 1, n_a):
-                        if q1 > q:          # divide proportion split b/t lower-priority areas
-                            V[new_priority[q1], t] = B[t] * split / (n_a - 1 - q)
-                t_prev = t_next                         # update for next area	 
-            else: 
-                t_next =  T	                            # for last area, next switching time is T
-                for t in range(t_prev, t_next):
-                    V[A[q], t] = B[t]                      # for last area, no splitting
+
+    new_priority = priority # for consistency with simulate_only, where the priorities change
+    t_prev = 0	# initialize previous switching time
+    for q in range(n_a):      # area index 0, ..., n_a - 1
+        if q < n_a - 1: 
+            t_next =  t_switch[q]	            # set next switching time
+            for t in range(t_prev, t_next):         # t=t_prev,..., t_next - 1
+                V[new_priority[q], t] = B[t] * (1 - split[q])	    # allocate to area specified in switching policy
+                for q1 in range(q + 1, n_a):
+                    if q1 > q:          # divide proportion split b/t lower-priority areas
+                        V[new_priority[q1], t] = B[t] * split[q] / (n_a - 1 - q)
+            t_prev = t_next                         # update for next area	 
+        else: 
+            t_next =  T	                            # for last area, next switching time is T
+            for t in range(t_prev, t_next):
+                V[A[q], t] = B[t]                      # for last area, no splitting
+    return V
                     
 def optimize_inner(l, V): 
     global deaths, donor_deaths, tot_deaths, t_n, zNLP, V_table, \
@@ -893,19 +884,6 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
         N[area] = convert_num(child.find("N").text)
     n_a = len(A)
     
-    t_switch = area_data.find("t_switch")
-    split = area_data.find("split")
-    
-    if t_switch is not None:
-        t_switch = t_switch.text.split(",")
-        for i in range(len(t_switch)):
-            t_switch[i] = convert_num(t_switch[i])
-    
-    if split is not None:
-        split = convert_num(split.text)
-    else:
-        split = 0
-    
     # read scenario data
     global T, B_0, nu, p_k, r_I, r_0, p_D, p_V_D, a_0, delta_a, \
         p_e, p_r, L, T_D, p, b_arr, v_u, v_l, g
@@ -950,6 +928,32 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
             v_u[a] = 1 
             g[a] = 1   
 
+    """
+    t_switch && split depends on T & n_a to be initiated
+    """
+    t_switch = area_data.find("t_switch")
+    split = area_data.find("split")
+    
+    if t_switch is not None:
+        t_switch = t_switch.text.split(",")
+        for i in range(len(t_switch)):
+            t_switch[i] = convert_num(t_switch[i])
+        while len(t_switch) < n_a-1:
+            t_switch.append(T)
+    else:
+        t_switch = [T for t_s in range(n_a-1)]
+    
+
+    if split is not None:
+        split = split.text.split(",")
+        for s in range(len(split)):
+            split[s] = convert_num(split[s])
+        print(split)
+        while len(split) < n_a-1:
+            split.append(0)
+    else:
+        split = [0 for s in range(n_a-1)]
+    
     # read params
     global simulate_only, lambda_0, phi, epsilon_0, delta_I, \
         delta, beta, iter_lmt, iter_lmt_search, dT, verbosity, T0,\
@@ -1185,17 +1189,19 @@ def o_input_echo():
             fn.write("Proportion willing to be vacc:   ")
             for area in A:
                 fn.write(str(rho[area]) + " ")
-            fn.write("\n")
+            fn.write(f"\n\n")
             
-            fn.write("\t\t\t\t\t<<<<<<<<<<<<<<<<<< Global Area Data >>>>>>>>>>>>>>>>>>" + "\n")
-            fn.write("\t\t\t Highest => Lowest \n")
-            fn.write(f"\t\t\t Priority Areas: {priority} \n")
-            fn.write(f"\t\t\t t_switch Days: {t_switch}\n")
-            fn.write(f"\t\t\t split allocation: {split} \n")
-            fn.write(f"\t\t\t Donor Area: {donor}\n")
-            fn.write(f"\t\t\t n: {str(n)} (Number of people before new variant)\n\n")
-
-            fn.write("------------------------------Scenario data------------------------------" + "\n")
+            fn.write("---------------------------- Global Area data-----------------------------" + "\n\n")
+            fn.write("Priority (decreasing): ")
+            for a1 in range(len(priority)): 
+                fn.write(str(priority[a1]) + " ")
+            fn.write("\n")
+            fn.write(f"t_switch Days: {t_switch}\n")
+            fn.write(f"split allocation: {split} \n")
+            fn.write(f"Donor Area: {donor}\n")
+            fn.write(f"n: {str(n)} (Number of people before new variant)")
+            fn.write(f"\n\n")
+            fn.write("------------------------------Scenario data------------------------------" + "\n\n")
             fn.write("Time horizon (days): " + str(T) + "\n")
             fn.write("Vaccine avaiable day 0: " + str(B_0) + "\n")
             fn.write("Weight for non-donor deaths in objective: " + str(nu) + "\n")
@@ -1211,14 +1217,11 @@ def o_input_echo():
             fn.write("Prop. transmission to a vaccinated person: " + str(p_r) + "\n")
             fn.write("Lag for variant to reach other areas (days): " + str(L) + "\n")
             fn.write("Time for variant to dominate (days): " + str(T_D) + "\n")
-            fn.write("Prop. of people in state I that have the new variant when introduced: " + str(p) + "\n")
-    
-            fn.write("-------------------------------Parameters--------------------------------" + "\n")
+            fn.write("Prop. of people in state I that have the new variant when introduced: " + str(p))
+            fn.write(f"\n\n")
+
+            fn.write("-------------------------------Parameters--------------------------------" + "\n\n")
             fn.write("Simulate only: " + str(simulate_only) + "\n")
-            fn.write("Priority (decreasing): ")
-            for a1 in range(len(priority)): 
-                fn.write(str(priority[a1]) + " ")
-            fn.write("\n")
             fn.write("Lagrange multiplier for infection: " + str(lambda_0) + "\n")
             fn.write("Exploration multiplier for lambda: " + str(phi) + "\n")
             fn.write("Exploration tolerance for LP: " + str(epsilon_0) + "\n")
@@ -1228,8 +1231,10 @@ def o_input_echo():
             fn.write("Iteration limit for LP: " + str(iter_lmt) + "\n")
             fn.write("Iteration limit for lambda: " + str(iter_lmt_search) + "\n")
             fn.write("Days after t_n[0] in Lagrangian: " + str(dT) + "\n")
-            fn.write("Verbosity: " + str(verbosity) + "\n")
-            fn.write("-------------------------------------------------------------------------" + "\n")
+            fn.write("Verbosity: " + str(verbosity))
+            fn.write(f"\n\n")
+
+            fn.write("-------------------------------------------------------------------------" + "\n\n")
         return 1
     except:
         print("Failed to output Input Echo")
@@ -1314,7 +1319,7 @@ if __name__ == '__main__':
     TIME_TRUNCATE = 5 # rounded time decimal places
     INCLUDE_PRINT = True # set to false if print is unwanted
     USED_OPTIMIZATION = False # formatting variable
-    LOOP_SIM = True
+    LOOP_SIM = False
     parser = argparse.ArgumentParser()
 
     # First positional argument (this must be present)
