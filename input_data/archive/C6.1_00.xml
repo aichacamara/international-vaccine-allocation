@@ -3,7 +3,16 @@
 <data>
   <area_data>
 
-    <area name="donor">
+    <area name="donor1">
+    <N>100000</N>            <!-- Population -->
+    <rho_V>0</rho_V>         <!-- Vaccination Rate -->
+    <rho_I_N>360</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
+    <delta_r>0.035</delta_r> <!--0.035 Testing effect on rate out of I -->
+    <gamma>1</gamma>         <!-- Behavior infection multiplier -->
+    <rho>.78</rho>           <!-- .78 Proportion willing to be vaccinated -->
+    </area>
+
+    <area name="donor2">
     <N>100000</N>            <!-- Population -->
     <rho_V>0</rho_V>         <!-- Vaccination Rate -->
     <rho_I_N>360</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
@@ -30,15 +39,33 @@
     <rho>.78</rho> 
     </area>
 
-    <priority>nondonor1,nondonor2</priority> <!--list (some) areas, high priority first-->
-    <donor>donor</donor>   <!-- Donor area -->
+    <area name="nondonor3">
+    <N>100000</N> 
+    <rho_V>0</rho_V> 
+    <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
+    <delta_r>0</delta_r> 
+    <gamma>1</gamma> 
+    <rho>.78</rho> 
+    </area>
+
+    <area name="nondonor4">
+    <N>100000</N> 
+    <rho_V>0</rho_V> 
+    <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
+    <delta_r>0</delta_r> 
+    <gamma>1</gamma> 
+    <rho>.78</rho> 
+    </area>
+
+    <priority>nondonor1,nondonor2,nondonor3,nondonor4,donor2</priority> <!--list (some) areas, high priority first-->
+    <donor>donor1</donor>   <!-- Donor area -->
     <m>nondonor2</m>       <!-- Variant area -->
     <n>120000</n>           <!-- 45K Person infection-days until new variant -->
   </area_data>
 
   <scenario_data>
-    <T>180</T>             <!-- Time horizon, days -->
-    <B_0>1500</B_0>        <!-- 1500 Vaccine available day 1 -->
+    <T>360</T>             <!-- Time horizon, days -->
+    <B_0>3000</B_0>        <!-- 1500 Vaccine available day 1 -->
     <nu>0</nu>             <!-- include fraction nu of non-donor deaths in objective  -->  
     <v_u>0.03</v_u>        <!-- .03 upper limit on proportion infectious, due to behavior. No behavior: 0 -->
     <p_k>1</p_k>           <!-- max prop of avail vacc used in donor area -->
@@ -66,11 +93,14 @@
     <phi>4</phi>                          <!-- exploration multiplier for lambda -->
     <epsilon_0>1000</epsilon_0>           <!-- exploration tolerance for LP V_cal -->
     <delta_I>0.001</delta_I>              <!-- 0.001 termination tolerance for LP -->
-    <delta>0.1</delta>                    <!-- termination tolerance for lambda -->
+    <delta>0.1</delta>                     <!-- termination tolerance for lambda -->
     <beta>0.8</beta>                      <!-- convergence parameter -->
-    <iter_lmt>1</iter_lmt>                <!-- iteration limit for I -->
-    <iter_lmt_search>1</iter_lmt_search>  <!-- iteration limit for lambda -->
+    
+    <!-- ITERATION LIMITS -->
+    <iter_lmt>2</iter_lmt>                <!-- iteration limit for I -->
+    <iter_lmt_search>19</iter_lmt_search>  <!-- iteration limit for lambda -->
+
     <dT>4</dT>                            <!-- days after t_n[0] in Lagr (t_LP). Set >= T to use all t -->
-    <verbosity>2</verbosity>              <!-- 0 least verbose output ... 2 most verbose -->
+    <verbosity>0</verbosity>              <!-- 0 least verbose output ... 2 most verbose -->
   </params>
 </data>
