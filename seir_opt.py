@@ -156,6 +156,7 @@ def outer_loop():
     # Initialize V for initial sim using priority list. Use splitting between areas.
 
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
+    new_priority = priority
     V = initialize_V(V,B)
 
     """
@@ -338,7 +339,8 @@ def outer_loop():
             new_priority.remove(a1)
             new_priority.insert(0,a1)
 
-            V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
+            V = {(a, t): 0 for a in A for t in range(T)}
+            new_priority = priority # for consistency with simulate_only, where the priorities change# t=0,...,T-1
             V = initialize_V(V,B)
             
             # Simulate   
@@ -373,9 +375,6 @@ def outer_loop():
 def initialize_V(V,B):
     """Runs simulation for switchover
     """
-    global new_priority
-
-    new_priority = priority # for consistency with simulate_only, where the priorities change
     t_prev = 0	# initialize previous switching time
     for q in range(n_a):      # area index 0, ..., n_a - 1
         if q < n_a - 1: 
