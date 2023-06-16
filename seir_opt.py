@@ -326,7 +326,7 @@ def outer_loop():
     """
     if simulate_only:
         fn.write("Simulate. Policy is based on top priority area and policy inputs.   " + input_file + "\n\n")  
-        fn.write("#1 priority  wtd_deaths donor_deaths    tot_deaths    t_n    variant area  vacc by area\n") 
+        fn.write("#1 priority\t\twtd_dths\t\tdnr_dths\t\ttot_dths\t\tt_n\t\tvariant\t\t\t V/area \n") 
         
         if INCLUDE_PRINT:
             print(f"Simulate. Policy gives vaccine to one area, then reallocates using priorities {input_file}")
@@ -899,6 +899,8 @@ def import_xml(xml_path: str): # Read inputs from XML file. xml_path: path to th
     p = convert_num(scenario_data.find("p").text)
     b_arr = scenario_data.find("b").text
     v_u = convert_num(scenario_data.find("v_u").text) 
+    global input_v_u
+    input_v_u = convert_num(scenario_data.find("v_u").text) 
     
     if not b_arr == None:
         b_arr = b_arr.split(sep=",")
@@ -1199,7 +1201,7 @@ def o_input_echo():
             fn.write("Time horizon (days): " + str(T) + "\n")
             fn.write("Vaccine avaiable day 0: " + str(B_0) + "\n")
             fn.write("Weight for non-donor deaths in objective: " + str(nu) + "\n")
-            fn.write("Upper limit on proportion infectious due to behavior: " + str(v_u) + "\n")
+            fn.write("Upper limit on proportion infectious due to behavior: " + str(input_v_u) + "\n")
             fn.write("Max. prop. of vaccine allocated to donor areas: " + str(p_k) + "\n")
             fn.write("Rate out of state E into I:" + str(r_I) + "\n")
             fn.write("Rate out of state I w/o testing: " + str(r_0) + "\n")
@@ -1249,7 +1251,7 @@ def o_policy_report(a1, deaths_sim_only, donor_deaths_sim_only, tot_deaths_sim_o
     """
     if simulate_only:
         try:
-            fn.write(f'{a1: ^{9}}    {deaths_sim_only: 8.2f}      {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}    {t_sim: 6.2f}   {m: ^{9}}\t\t') 
+            fn.write(f'{a1: ^{9}}\t\t{deaths_sim_only: 8.2f}\t\t{donor_deaths_sim_only: 8.2f}\t{tot_deaths_sim_only: 12.2f}\t{t_sim: 6.2f}\t{m: ^{9}}\t\t') 
             output = f'{a1: ^{9}}  {deaths_sim_only: 8.2f}  {donor_deaths_sim_only: 8.2f}  {tot_deaths_sim_only: 12.2f}  {t_sim: 6.2f} '
             for a in A:
                 fn.write(f'{V_tot_sim[a]: 5.0f} ') 
