@@ -339,20 +339,8 @@ def outer_loop():
             new_priority.insert(0,a1)
 
             V = {(a, t): 0 for a in A for t in range(T)}    # t=0,...,T-1
-            t_prev = 0	# initialize previous switching time
-            for q in range(n_a):      # area index 0, ..., a_n - 1
-                if q < n_a - 1: 
-                    t_next =  t_switch[q]	                        # set next switching time
-                    for t in range(t_prev, t_next):                 # t=t_prev,..., t_next - 1
-                        V[new_priority[q], t] = B[t] * (1 - split[q])	# allocate to area specified in switching policy
-                        for q1 in range(q + 1, n_a):
-                            if q1 > q:          # divide proportion split b/t lower-priority areas
-                                V[new_priority[q1], t] = B[t] * split[q] / (n_a - 1 - q)
-                    t_prev = t_next                                 # update for next area	 
-                else: 
-                    t_next =  T	                                    # for last area, next switching time is T
-                    for t in range(t_prev, t_next):
-                        V[A[q], t] = B[t]                           # for last area, no splitting
+            V = initialize_V(V,B)
+            
             # Simulate   
             csv_file = open(f"{fn_base}_plot_{a1}.csv", "w") 
             t_sim, alpha, V_cal, V, D = simulate(V)
@@ -752,7 +740,7 @@ def simulate(V):
         for a in A:
             realloc += V[a, t] - V_star[a, t] # unused vacc
             V_minus[a] = V_star[a, t] # Store vacc before realloc
-        for a in priority: # loop over areas in priority order
+        for a in new_priority: # loop over areas in priority order
             if S[a, t] < 0.0000001:
                 Wnew = W[a, t] # limit on V_star
             else:
