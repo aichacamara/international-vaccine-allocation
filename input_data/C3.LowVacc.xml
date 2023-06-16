@@ -6,7 +6,7 @@
     <area name="donor">
     <N>100000</N>            <!-- Population -->
     <rho_V>0</rho_V>         <!-- Vaccination Rate -->
-    <rho_I_N>360</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
+    <rho_I_N>2</rho_I_N>   <!-- 360 Initial cases per day = rho_I * N -->
     <delta_r>0.035</delta_r> <!--0.035 Testing effect on rate out of I -->
     <gamma>1</gamma>         <!-- Behavior infection multiplier -->
     <rho>.78</rho>           <!-- .78 Proportion willing to be vaccinated -->
@@ -15,7 +15,7 @@
     <area name="nondonor1">
     <N>100000</N> 
     <rho_V>0</rho_V> 
-    <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
+    <rho_I_N>2</rho_I_N>    <!--72 20% of donor -->
     <delta_r>0</delta_r> 
     <gamma>1</gamma> 
     <rho>.78</rho> 
@@ -24,13 +24,13 @@
     <area name="nondonor2">
     <N>100000</N> 
     <rho_V>0</rho_V> 
-    <rho_I_N>72</rho_I_N>    <!--72 20% of donor -->
+    <rho_I_N>2</rho_I_N>    <!--72 20% of donor -->
     <delta_r>0</delta_r> 
     <gamma>1</gamma> 
     <rho>.78</rho> 
     </area>
 
-    <priority>donor,nondonor1,nondonor2</priority> <!--list (some) areas, high priority first-->
+    <priority>nondonor2,nondonor1,donor</priority> <!--list (some) areas, high priority first-->
     
     <!-- Switchover policy (optional parameter):
       Usage:
@@ -41,8 +41,8 @@
         where n_a = number of areas 
         ...
     -->
-    <t_switch>10,180</t_switch> 
-    <split>0,0.5</split>       <!-- Default [0...] (no split)-->
+    <t_switch>30,60</t_switch> 
+    <split>0.5,0.1</split>       <!-- Default [0...] (no split)-->
     
     <donor>donor</donor>   <!-- Donor area -->
     <m>nondonor1</m>        <!-- Variant area -->
@@ -51,7 +51,7 @@
 
   <scenario_data>
     <T>180</T>             <!-- Time horizon, days -->
-    <B_0>1500</B_0>        <!-- 1500 Vaccine available day 1 -->
+    <B_0>100</B_0>        <!-- Vaccines available day 1 -->
     <nu>0</nu>             <!-- 0 include fraction nu of non-donor deaths in objective  -->
     <v_u>0.03</v_u>        <!-- .03 upper limit on proportion infectious, due to behavior. No behavior: 0 -->
     <p_k>1</p_k>           <!-- max prop of avail vacc used in donor area -->

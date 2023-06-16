@@ -10,6 +10,7 @@ import shutil
 import csv
 import sys
 import time
+import copy
              
 def main():
     """
@@ -156,7 +157,7 @@ def outer_loop():
     # Initialize V for initial sim using priority list. Use splitting between areas.
 
     V = {(a, t): 0 for a in A for t in range(T)}       # t=0,...,T-1
-    new_priority = priority
+    new_priority = [e for e in priority]
     V = initialize_V(V,B)
 
     """
@@ -335,12 +336,12 @@ def outer_loop():
         V_sim = {(a1, a, t): 0 for a1 in A for a in A for t in range(T)}       # To store V by priority policy
         for a1 in A:         
             # Initialize V giving initial priority to area a1, then use priority list. Use splitting between areas.
-            new_priority = priority
+            new_priority = [e for e in priority]
             new_priority.remove(a1)
             new_priority.insert(0,a1)
 
             V = {(a, t): 0 for a in A for t in range(T)}
-            new_priority = priority # for consistency with simulate_only, where the priorities change# t=0,...,T-1
+            # new_priority = priority # for consistency with simulate_only, where the priorities change# t=0,...,T-1
             V = initialize_V(V,B)
             
             # Simulate   
