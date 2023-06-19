@@ -1,0 +1,8 @@
+# ignore created output files.
+*.out
+/output/*
+*.sh
+
+# created gurobi.log (unique to each machine)
+*.log
+
